@@ -39,7 +39,7 @@ create table if not exists public.pacientes (
   has         boolean not null default false,
   dislip      boolean not null default false,
   tipo        text not null check (tipo in ('primaria','revisional')),
-  proc        text not null check (proc in ('manga','oagb','bypass','sadis','oatb','manga_endo','allurion','balon','otra')),
+  proc        text not null check (proc in ('manga','oagb','bypass','sadis','oatb','biparticion','manga_endo','allurion','balon','otra')),
   abordaje    text not null check (abordaje in ('laparoscopica','robotica','abierta','endoscopica')),
   estancia    integer not null check (estancia between 0 and 365),
   reop        boolean not null default false,
