@@ -216,6 +216,11 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
             <label><input type="radio" name="proc" value="manga" id="proc-manga" required>Manga gástrica</label>
             <label><input type="radio" name="proc" value="oagb" id="proc-oagb">OAGB / mini-bypass</label>
             <label><input type="radio" name="proc" value="bypass" id="proc-bypass">Bypass en Y de Roux</label>
+            <label><input type="radio" name="proc" value="sadis" id="proc-sadis">SADI-S</label>
+            <label><input type="radio" name="proc" value="oatb" id="proc-oatb">OATB / Bipartición intestinal</label>
+            <label><input type="radio" name="proc" value="manga_endo" id="proc-manga_endo">Manga gástrica endoscópica</label>
+            <label><input type="radio" name="proc" value="allurion" id="proc-allurion">Balón Allurion</label>
+            <label><input type="radio" name="proc" value="balon" id="proc-balon">Balón endoscópico</label>
             <label><input type="radio" name="proc" value="otra" id="proc-otra">Otra</label>
           </div></div>
         <div class="field wide"><label>Abordaje</label>
@@ -331,7 +336,10 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
   const setStatus = (el, msg, cls) => { el.textContent = msg || ''; el.className = 'status' + (cls ? ' ' + cls : ''); };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const hoy = () => new Date().toISOString().slice(0,10);
-  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
+  // Procedimientos que en el formato IFSO cuentan como "otra" (se desglosan en el resumen y en la base de pacientes).
+  const OTRAS = ['sadis','oatb','manga_endo','allurion','balon','otra'];
+  const cntOtra = arr => arr.filter(r => OTRAS.includes(r.proc)).length;
+  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB/Bipartición',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
 
   $('#auth-org').textContent = CFG.ORGANIZACION || '';
   if (!CFG.SUPABASE_URL || CFG.SUPABASE_URL.includes('PENDIENTE')) {
@@ -540,12 +548,13 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
     const M = rs.filter(r=>r.sexo==='M'), H = rs.filter(r=>r.sexo==='H');
     const prim = rs.filter(r=>r.tipo==='primaria'), rev = rs.filter(r=>r.tipo==='revisional');
     const cnt = (arr,k,v) => arr.filter(r=>r[k]===v).length;
+    const otras = arr => OTRAS.map(v => [`   · ${L.proc[v]}`, cnt(arr,'proc',v)]);
     return [
       ['g','Pacientes'],['Número de pacientes', rs.length],['Mujeres', pct(M.length, rs.length)],['Edad mujeres · mediana (mín – máx)', stat(M.map(r=>r.edad))],
       ['Hombres', pct(H.length, rs.length)],['Edad hombres · mediana (mín – máx)', stat(H.map(r=>r.edad))],
       ['IMC mujeres · mediana (mín – máx)', stat(M.map(r=>r.imc))],['IMC hombres · mediana (mín – máx)', stat(H.map(r=>r.imc))],
-      ['g','Cirugías primarias'],['Primaria manga', cnt(prim,'proc','manga')],['Primaria OAGB', cnt(prim,'proc','oagb')],['Primaria bypass', cnt(prim,'proc','bypass')],['Primaria otra', cnt(prim,'proc','otra')],
-      ['g','Cirugías revisionales'],['Revisional manga', cnt(rev,'proc','manga')],['Revisional OAGB', cnt(rev,'proc','oagb')],['Revisional bypass', cnt(rev,'proc','bypass')],['Revisional otra', cnt(rev,'proc','otra')],
+      ['g','Cirugías primarias'],['Primaria manga', cnt(prim,'proc','manga')],['Primaria OAGB', cnt(prim,'proc','oagb')],['Primaria bypass', cnt(prim,'proc','bypass')],['Primaria otra (total)', cntOtra(prim)], ...otras(prim),
+      ['g','Cirugías revisionales'],['Revisional manga', cnt(rev,'proc','manga')],['Revisional OAGB', cnt(rev,'proc','oagb')],['Revisional bypass', cnt(rev,'proc','bypass')],['Revisional otra (total)', cntOtra(rev)], ...otras(rev),
       ['g','Comorbilidades'],['DM2 hombres', pct(H.filter(r=>r.dm2).length, H.length)],['DM2 mujeres', pct(M.filter(r=>r.dm2).length, M.length)],
       ['HAS hombres', pct(H.filter(r=>r.has).length, H.length)],['HAS mujeres', pct(M.filter(r=>r.has).length, M.length)],
       ['Dislipidemia hombres', pct(H.filter(r=>r.dislip).length, H.length)],['Dislipidemia mujeres', pct(M.filter(r=>r.dislip).length, M.length)],
@@ -673,8 +682,8 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
     const M = rs.filter(r=>r.sexo==='M'), H = rs.filter(r=>r.sexo==='H'), prim = rs.filter(r=>r.tipo==='primaria'), rev = rs.filter(r=>r.tipo==='revisional');
     const cnt = (arr,k,v) => arr.filter(r=>r[k]===v).length, e = a => a.map(r=>Number(r.edad)), i = a => a.map(r=>Number(r.imc));
     return [nombre, rs.length, M.length, med(e(M)), mn(e(M)), mx(e(M)), H.length, med(e(H)), mn(e(H)), mx(e(H)),
-      cnt(prim,'proc','manga'), cnt(prim,'proc','oagb'), cnt(prim,'proc','bypass'), cnt(prim,'proc','otra'),
-      cnt(rev,'proc','manga'), cnt(rev,'proc','oagb'), cnt(rev,'proc','bypass'), cnt(rev,'proc','otra'),
+      cnt(prim,'proc','manga'), cnt(prim,'proc','oagb'), cnt(prim,'proc','bypass'), cntOtra(prim),
+      cnt(rev,'proc','manga'), cnt(rev,'proc','oagb'), cnt(rev,'proc','bypass'), cntOtra(rev),
       med(i(H)), mx(i(H)), mn(i(H)), med(i(M)), mx(i(M)), mn(i(M)),
       H.filter(r=>r.dm2).length, M.filter(r=>r.dm2).length, H.filter(r=>r.has).length, M.filter(r=>r.has).length, H.filter(r=>r.dislip).length, M.filter(r=>r.dislip).length,
       med(rs.map(r=>Number(r.estancia))), rs.filter(r=>r.reop).length, rs.filter(r=>r.muerte).length,
@@ -687,7 +696,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
     const cols = centros.map(c => columnaIFSO(c.nombre, rs.filter(p => p.centro_id === c.id))).concat([columnaIFSO('TOTAL MÉXICO', rs)]);
     const hoja1 = FILAS_IFSO.map((f, i) => [f].concat(cols.map(c => c[i] == null ? '' : c[i])));
     const base = [['centro','fecha','folio','sexo','edad','imc','dm2','has','dislip','tipo','procedimiento','abordaje','estancia_dias','reop_readmision','muerte','notas']]
-      .concat(rs.map(p => [centroNombre(p.centro_id), p.fecha, p.folio||'', p.sexo, p.edad, Number(p.imc), p.dm2?1:0, p.has?1:0, p.dislip?1:0, p.tipo, p.proc, p.abordaje, p.estancia, p.reop?1:0, p.muerte?1:0, p.notas||'']));
+      .concat(rs.map(p => [centroNombre(p.centro_id), p.fecha, p.folio||'', p.sexo, p.edad, Number(p.imc), p.dm2?1:0, p.has?1:0, p.dislip?1:0, p.tipo, L.proc[p.proc] || p.proc, p.abordaje, p.estancia, p.reop?1:0, p.muerte?1:0, p.notas||'']));
     const wb = XLSX.utils.book_new();
     const ws1 = XLSX.utils.aoa_to_sheet(hoja1); ws1['!cols'] = [{wch:28}].concat(cols.map(() => ({wch:22})));
     XLSX.utils.book_append_sheet(wb, ws1, 'Hoja1');
