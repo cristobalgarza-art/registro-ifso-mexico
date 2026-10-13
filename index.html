@@ -289,9 +289,10 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
       <p class="status" id="st-centro"></p>
     </form>
   </div>
-  <p class="hint" style="margin:14px 0 8px">Cada centro recibe un código. El cirujano crea su cuenta en esta misma página y escribe el código una sola vez. "Copiar invitación" arma el mensaje listo para WhatsApp o correo.</p>
+  <p class="hint" style="margin:14px 0 8px">Cada centro recibe un código. El cirujano crea su cuenta en esta misma página y escribe el código una sola vez. "Copiar invitación" arma el mensaje listo para WhatsApp o correo. Un centro <b>inactivo</b> conserva sus datos pero ya no acepta nuevos usuarios con su código. <b>Fusionar</b> pasa todos los pacientes y usuarios de un centro a otro y elimina el primero.</p>
+  <p class="status" id="st-centros-acciones"></p>
   <div class="tablewrap">
-    <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Código</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th></th></tr></thead><tbody id="tbody-centros"></tbody></table>
+    <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Código</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th>Acciones</th></tr></thead><tbody id="tbody-centros"></tbody></table>
     <div class="empty" id="empty-centros">Aún no hay centros. Crea el primero arriba.</div>
   </div>
 </section>
@@ -438,7 +439,7 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
     renderTodo();
   }
   function renderTodo(){
-    const opts = centros.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    const opts = centros.map(c => `<option value="${c.id}">${esc(c.nombre)}${c.activo === false ? ' (inactivo)' : ''}</option>`).join('');
     const keep = (sel, html, first) => { const v = sel.value; sel.innerHTML = first + html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
     keep($('#filtro-centro'), opts, '<option value="">Todos los centros</option>');
     keep($('#resumen-centro'), opts, '<option value="">Todos los centros (México)</option>');
@@ -593,14 +594,59 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
     $('#kpis').innerHTML = [[centros.length,'centros'],[perfiles.length,'usuarios'],[pacientes.length,'pacientes'],[pacientes.filter(p=>p.fecha.startsWith(String(new Date().getFullYear()))).length,'pacientes ' + new Date().getFullYear()]]
       .map(([n,l]) => `<div class="kpi"><b>${n}</b><span>${l}</span></div>`).join('');
     $('#empty-centros').hidden = centros.length > 0;
-    $('#tbody-centros').innerHTML = centros.map(c => `<tr><td>${esc(c.nombre)}</td><td>${esc([c.ciudad,c.estado].filter(Boolean).join(', ')||'—')}</td><td><span class="code">${esc(c.codigo)}</span></td>
-      <td class="num">${nUsers(c.id)}</td><td class="num">${nPac(c.id)}</td><td><button class="rowbtn" data-inv="${c.id}">Copiar invitación</button></td></tr>`).join('');
+    $('#tbody-centros').innerHTML = centros.map(c => {
+      const otros = centros.filter(o => o.id !== c.id).map(o => `<option value="${o.id}">${esc(o.nombre)}</option>`).join('');
+      let acciones;
+      if (accionCentro.id === c.id && accionCentro.tipo === 'renombrar') {
+        acciones = `<input data-nombre="${c.id}" value="${esc(c.nombre)}" style="min-height:34px;padding:4px 8px;width:220px"> <button class="rowbtn confirm" data-ok="renombrar" data-id="${c.id}">Guardar</button> <button class="rowbtn" data-cancel="1">Cancelar</button>`;
+      } else if (accionCentro.id === c.id && accionCentro.tipo === 'fusionar') {
+        acciones = otros ? `Pasar todo a: <select data-destino="${c.id}" style="min-height:34px;padding:4px 8px;width:220px">${otros}</select> <button class="rowbtn confirm" data-ok="fusionar" data-id="${c.id}">Fusionar y eliminar "${esc(c.nombre)}"</button> <button class="rowbtn" data-cancel="1">Cancelar</button>` : `No hay otro centro al cual fusionar. <button class="rowbtn" data-cancel="1">Cerrar</button>`;
+      } else if (accionCentro.id === c.id && accionCentro.tipo === 'borrar') {
+        acciones = `¿Borrar "${esc(c.nombre)}"? <button class="rowbtn confirm" data-ok="borrar" data-id="${c.id}">Sí, borrar</button> <button class="rowbtn" data-cancel="1">Cancelar</button>`;
+      } else {
+        acciones = `<button class="rowbtn" data-inv="${c.id}">Copiar invitación</button> <button class="rowbtn" data-accion="renombrar" data-id="${c.id}">Renombrar</button> <button class="rowbtn" data-accion="toggle" data-id="${c.id}">${c.activo ? 'Desactivar' : 'Reactivar'}</button> <button class="rowbtn" data-accion="fusionar" data-id="${c.id}">Fusionar</button>` + (nPac(c.id) === 0 ? ` <button class="rowbtn" data-accion="borrar" data-id="${c.id}">Borrar</button>` : '');
+      }
+      return `<tr><td>${esc(c.nombre)}${c.activo ? '' : ' <span class="pill rev">Inactivo</span>'}</td><td>${esc([c.ciudad,c.estado].filter(Boolean).join(', ')||'—')}</td><td><span class="code">${esc(c.codigo)}</span></td>
+      <td class="num">${nUsers(c.id)}</td><td class="num">${nPac(c.id)}</td><td style="white-space:normal;min-width:260px">${acciones}</td></tr>`;
+    }).join('');
   }
+  let accionCentro = { id: null, tipo: null };
   $('#tbody-centros').addEventListener('click', async ev => {
-    const b = ev.target.closest('[data-inv]'); if (!b) return;
-    const c = centros.find(x => x.id === b.dataset.inv);
-    const msg = `Registro IFSO México – ${c.nombre}\n\n1. Abre ${location.href.split('#')[0]}\n2. Toca "Crear cuenta nueva" (nombre, correo y contraseña).\n3. Escribe el código de tu centro: ${c.codigo}\n\nDespués de eso solo captura cada paciente operado. Toma menos de un minuto por paciente.`;
-    try { await navigator.clipboard.writeText(msg); b.textContent = 'Copiado'; setTimeout(() => b.textContent = 'Copiar invitación', 2000); } catch(e) { setStatus($('#st-centro'), 'No se pudo copiar. Código: ' + c.codigo, 'err'); }
+    const st = $('#st-centros-acciones');
+    const inv = ev.target.closest('[data-inv]');
+    if (inv) {
+      const c = centros.find(x => x.id === inv.dataset.inv);
+      const msg = `Registro IFSO México – ${c.nombre}\n\n1. Abre ${location.href.split('#')[0]}\n2. Toca "Crear cuenta nueva" (nombre, correo y contraseña).\n3. Escribe el código de tu centro: ${c.codigo}\n\nDespués de eso solo captura cada paciente operado. Toma menos de un minuto por paciente.`;
+      try { await navigator.clipboard.writeText(msg); inv.textContent = 'Copiado'; setTimeout(() => inv.textContent = 'Copiar invitación', 2000); } catch(e) { setStatus(st, 'No se pudo copiar. Código: ' + c.codigo, 'err'); }
+      return;
+    }
+    if (ev.target.closest('[data-cancel]')) { accionCentro = { id: null, tipo: null }; renderCentros(); return; }
+    const a = ev.target.closest('[data-accion]');
+    if (a) {
+      const c = centros.find(x => x.id === a.dataset.id);
+      if (a.dataset.accion === 'toggle') {
+        const { error } = await sb.from('centros').update({ activo: !c.activo }).eq('id', c.id);
+        setStatus(st, error ? 'No se pudo cambiar: ' + error.message : (c.activo ? `"${c.nombre}" desactivado: su código ya no admite nuevos usuarios.` : `"${c.nombre}" reactivado.`), error ? 'err' : 'ok');
+        await recargar(); return;
+      }
+      accionCentro = { id: c.id, tipo: a.dataset.accion }; renderCentros(); return;
+    }
+    const ok = ev.target.closest('[data-ok]');
+    if (ok) {
+      const c = centros.find(x => x.id === ok.dataset.id); let error = null, msg = '';
+      if (ok.dataset.ok === 'renombrar') {
+        const nombre = $(`[data-nombre="${c.id}"]`).value.trim(); if (!nombre) return;
+        ({ error } = await sb.from('centros').update({ nombre }).eq('id', c.id)); msg = `Centro renombrado a "${nombre}".`;
+      } else if (ok.dataset.ok === 'fusionar') {
+        const destino = $(`[data-destino="${c.id}"]`).value; const d = centros.find(x => x.id === destino);
+        const r = await sb.rpc('admin_fusionar_centros', { p_origen: c.id, p_destino: destino }); error = r.error; msg = `Listo: ${r.data ?? 0} paciente(s) y los usuarios de "${c.nombre}" pasaron a "${d.nombre}". "${c.nombre}" fue eliminado.`;
+      } else if (ok.dataset.ok === 'borrar') {
+        ({ error } = await sb.rpc('admin_borrar_centro', { p_id: c.id })); msg = `"${c.nombre}" borrado.`;
+      }
+      accionCentro = { id: null, tipo: null };
+      setStatus(st, error ? 'No se pudo: ' + (error.code === '23505' ? 'ya existe un centro con ese nombre.' : error.message) : msg, error ? 'err' : 'ok');
+      await recargar();
+    }
   });
 
   // ---------- admin: usuarios ----------
