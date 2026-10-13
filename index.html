@@ -214,10 +214,11 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
         <div class="field wide"><label>Procedimiento</label>
           <div class="seg">
             <label><input type="radio" name="proc" value="manga" id="proc-manga" required>Manga gástrica</label>
-            <label><input type="radio" name="proc" value="oagb" id="proc-oagb">OAGB / mini-bypass</label>
+            <label><input type="radio" name="proc" value="oagb" id="proc-oagb">OAGB</label>
             <label><input type="radio" name="proc" value="bypass" id="proc-bypass">Bypass en Y de Roux</label>
             <label><input type="radio" name="proc" value="sadis" id="proc-sadis">SADI-S</label>
-            <label><input type="radio" name="proc" value="oatb" id="proc-oatb">OATB / Bipartición intestinal</label>
+            <label><input type="radio" name="proc" value="oatb" id="proc-oatb">OATB</label>
+            <label><input type="radio" name="proc" value="biparticion" id="proc-biparticion">Bipartición intestinal</label>
             <label><input type="radio" name="proc" value="manga_endo" id="proc-manga_endo">Manga gástrica endoscópica</label>
             <label><input type="radio" name="proc" value="allurion" id="proc-allurion">Balón Allurion</label>
             <label><input type="radio" name="proc" value="balon" id="proc-balon">Balón endoscópico</label>
@@ -337,9 +338,9 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const hoy = () => new Date().toISOString().slice(0,10);
   // Procedimientos que en el formato IFSO cuentan como "otra" (se desglosan en el resumen y en la base de pacientes).
-  const OTRAS = ['sadis','oatb','manga_endo','allurion','balon','otra'];
+  const OTRAS = ['sadis','oatb','biparticion','manga_endo','allurion','balon','otra'];
   const cntOtra = arr => arr.filter(r => OTRAS.includes(r.proc)).length;
-  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB/Bipartición',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
+  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
 
   $('#auth-org').textContent = CFG.ORGANIZACION || '';
   if (!CFG.SUPABASE_URL || CFG.SUPABASE_URL.includes('PENDIENTE')) {
