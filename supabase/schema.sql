@@ -147,3 +147,29 @@ grant select, insert, update, delete on public.centros, public.perfiles, public.
 grant execute on function public.es_admin(), public.mi_centro(), public.unirse_a_centro(text),
   public.actualizar_nombre(text), public.admin_actualizar_perfil(uuid, text, uuid),
   public.pacientes_anonimos(integer) to authenticated;
+
+-- Gestión de centros por el coordinador: renombrar, activar/desactivar, fusionar, borrar.
+create or replace function public.admin_fusionar_centros(p_origen uuid, p_destino uuid) returns integer
+language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  if not public.es_admin() then raise exception 'Solo administradores'; end if;
+  if p_origen = p_destino then raise exception 'El origen y el destino son el mismo centro'; end if;
+  if not exists (select 1 from public.centros where id = p_destino) then raise exception 'Centro destino no existe'; end if;
+  update public.pacientes set centro_id = p_destino where centro_id = p_origen;
+  get diagnostics n = row_count;
+  update public.perfiles set centro_id = p_destino where centro_id = p_origen;
+  delete from public.centros where id = p_origen;
+  return n;
+end $$;
+
+create or replace function public.admin_borrar_centro(p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.es_admin() then raise exception 'Solo administradores'; end if;
+  if exists (select 1 from public.pacientes where centro_id = p_id) then raise exception 'El centro tiene pacientes; fusiónalo o desactívalo'; end if;
+  update public.perfiles set centro_id = null where centro_id = p_id;
+  delete from public.centros where id = p_id;
+end $$;
+
+grant execute on function public.admin_fusionar_centros(uuid, uuid), public.admin_borrar_centro(uuid) to authenticated;
