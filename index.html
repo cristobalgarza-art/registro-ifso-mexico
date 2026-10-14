@@ -4,710 +4,95 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Registro IFSO México</title>
+<meta name="description" content="Registro nacional de cirugía bariátrica y metabólica de México. Captura por centro, resumen nacional anónimo y reporte IFSO.">
 <meta name="theme-color" content="#0b4f7a">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="IFSO MX">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="estilos.css">
 <script src="config.js"></script>
 <style>
-:root{
-  --bg:#f3f6f8; --surface:#ffffff; --fg:#17202a; --muted:#5c6b7a; --line:#d5dde5;
-  --accent:#0b4f7a; --accent-fg:#ffffff; --accent-soft:#e1eef7;
-  --ok:#1f7a4d; --danger:#b3261e; --danger-soft:#fbe9e7; --warn-soft:#fff4e0;
-  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
-}
-@media (prefers-color-scheme: dark){ :root{
-  --bg:#0f1519; --surface:#182027; --fg:#e8edf2; --muted:#9aa8b5; --line:#2b3741;
-  --accent:#5fb0e0; --accent-fg:#06202f; --accent-soft:#143245;
-  --ok:#5ccb8e; --danger:#f28b82; --danger-soft:#3a1d1b; --warn-soft:#3a2d12; color-scheme:dark } }
-*{box-sizing:border-box}
-html,body{height:100%}
-body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.45;margin:0}
-.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:0 56px}
-header{position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--line);padding-top:calc(12px + env(safe-area-inset-top,0px))}
-.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-size:1.15rem;margin:0;font-weight:700;letter-spacing:-.01em}
-h2{font-size:1.05rem;margin:0 0 12px;font-weight:600}
-.brand small{display:block;color:var(--muted);font-size:.8rem;font-weight:400}
-.who{font-size:.85rem;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.who b{color:var(--fg);font-weight:500}
-nav{display:flex;gap:2px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-nav button{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);font:inherit;font-weight:500;padding:8px 10px;cursor:pointer;white-space:nowrap;border-radius:0}
-nav button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
-:is(button,input,select,textarea,a):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-section{padding-block:18px}
-.status{font-size:.9rem;color:var(--muted);margin:10px 0 0;min-height:1.3em}
-.status.err{color:var(--danger)} .status.ok{color:var(--ok)}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
-.card + .card{margin-top:14px}
-fieldset{border:0;margin:0 0 18px;padding:0;min-width:0}
-legend{font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.field{display:flex;flex-direction:column;gap:4px;min-width:0}
-.field.wide{grid-column:1/-1}
-label{font-size:.9rem;font-weight:500}
-input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-height:44px}
-textarea{min-height:70px;resize:vertical}
-.seg{display:flex;flex-wrap:wrap;gap:6px}
-.seg label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;background:var(--surface);min-height:44px;font-weight:500}
-.seg input{width:auto;min-height:0;margin:0;accent-color:var(--accent)}
-.seg label:has(input:checked){background:var(--accent-soft);border-color:var(--accent)}
-.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
-.btn{font:inherit;font-weight:600;border-radius:8px;padding:11px 18px;min-height:44px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
-.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
-.btn.danger{color:var(--danger);border-color:var(--danger)}
-.btn.link{border:0;background:none;color:var(--accent);padding:6px 4px;font-weight:500;min-height:0}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.hint{font-size:.85rem;color:var(--muted)}
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.toolbar select,.toolbar input{width:auto;flex:1 1 160px}
-.count{font-family:var(--mono);font-size:.85rem;color:var(--muted)}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
-table{border-collapse:collapse;width:100%;font-size:.9rem}
-th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;vertical-align:top}
-th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--bg);position:sticky;top:0}
-td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
-tr:last-child td{border-bottom:0}
-tr.click{cursor:pointer} tr.click:hover td{background:var(--accent-soft)}
-.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.76rem;font-weight:600;background:var(--accent-soft);color:var(--accent)}
-.pill.rev{background:var(--danger-soft);color:var(--danger)}
-.pill.muerte{background:var(--danger);color:#fff}
-.code{font-family:var(--mono);font-size:1rem;letter-spacing:.12em;background:var(--accent-soft);color:var(--accent);padding:3px 8px;border-radius:6px}
-.rowbtn{font:inherit;font-size:.8rem;background:none;border:1px solid var(--line);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--muted)}
-.rowbtn.confirm{color:var(--danger);border-color:var(--danger)}
-.empty{padding:28px 16px;text-align:center;color:var(--muted)}
-.summary th:first-child,.summary td:first-child{white-space:normal;min-width:200px}
-.summary tr.group td{background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.06em}
-.auth{max-width:420px;margin:40px auto 0}
-.auth h1{font-size:1.4rem;margin-bottom:4px}
-.auth .org{color:var(--muted);font-size:.9rem;margin:0 0 20px}
-.banner{background:var(--warn-soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.9rem;margin-bottom:14px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.kpi b{display:block;font-size:1.5rem;font-family:var(--mono);font-weight:500}
-.kpi span{font-size:.8rem;color:var(--muted)}
-[hidden]{display:none!important}
-@media (prefers-reduced-motion:no-preference){ .btn,nav button{transition:background .15s,color .15s} }
+.hero{padding:56px 0 28px;text-align:center}
+.hero h1{font-size:2rem;line-height:1.15;margin:0 0 10px}
+.hero p{color:var(--muted);max-width:560px;margin:0 auto 24px;font-size:1.05rem}
+.hero .actions{justify-content:center}
+.btn.big{font-size:1.05rem;padding:14px 24px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0}
+.card h3{margin:0 0 6px;font-size:1.05rem}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+.card .actions{margin-top:14px}
+.steps{counter-reset:s;display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.steps li{display:flex;gap:12px;align-items:flex-start}
+.steps li::before{counter-increment:s;content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-weight:600;font-size:.9rem}
+footer{color:var(--muted);font-size:.85rem;text-align:center;padding:32px 0 8px}
+#instalar-ayuda{display:none}
+#instalar-ayuda.show{display:block}
 </style>
 </head>
 <body>
 <div class="wrap">
-
-<!-- ================= AUTH ================= -->
-<div id="view-auth" class="auth" hidden>
-  <h1 id="auth-titulo">Registro IFSO México</h1>
-  <p class="org" id="auth-org"></p>
-  <div class="card">
-    <div id="auth-login">
-      <h2>Entrar</h2>
-      <form id="form-login" novalidate>
-        <div class="grid">
-          <div class="field wide"><label for="li-email">Correo</label><input id="li-email" type="email" autocomplete="username" required></div>
-          <div class="field wide"><label for="li-pass">Contraseña</label><input id="li-pass" type="password" autocomplete="current-password" required></div>
-        </div>
-        <div class="actions"><button class="btn primary" type="submit">Entrar</button></div>
-        <p class="status" id="st-login"></p>
-      </form>
-      <div class="actions">
-        <button class="btn link" type="button" data-auth="registro">Crear cuenta nueva</button>
-        <button class="btn link" type="button" data-auth="olvide">Olvidé mi contraseña</button>
-      </div>
-    </div>
-
-    <div id="auth-registro" hidden>
-      <h2>Crear cuenta</h2>
-      <form id="form-registro" novalidate>
-        <div class="grid">
-          <div class="field wide"><label for="re-nombre">Nombre (como aparecerá en el registro)</label><input id="re-nombre" required placeholder="Dr. Nombre Apellido"></div>
-          <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
-          <div class="field wide"><label for="re-pass">Contraseña (mínimo 8 caracteres)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
-        </div>
-        <div class="actions"><button class="btn primary" type="submit">Crear cuenta</button><button class="btn link" type="button" data-auth="login">Ya tengo cuenta</button></div>
-        <p class="status" id="st-registro"></p>
-      </form>
-    </div>
-
-    <div id="auth-olvide" hidden>
-      <h2>Recuperar contraseña</h2>
-      <form id="form-olvide" novalidate>
-        <div class="field"><label for="ol-email">Correo</label><input id="ol-email" type="email" required></div>
-        <div class="actions"><button class="btn primary" type="submit">Enviar enlace</button><button class="btn link" type="button" data-auth="login">Volver</button></div>
-        <p class="status" id="st-olvide"></p>
-      </form>
-    </div>
-
-    <div id="auth-nueva" hidden>
-      <h2>Nueva contraseña</h2>
-      <form id="form-nueva" novalidate>
-        <div class="field"><label for="nu-pass">Contraseña nueva (mínimo 8 caracteres)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
-        <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
-        <p class="status" id="st-nueva"></p>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- ================= SIN CENTRO ================= -->
-<div id="view-codigo" class="auth" hidden>
-  <h1>Un paso más</h1>
-  <p class="org">Ingresa el código de tu centro. Te lo da el coordinador del registro.</p>
-  <div class="card">
-    <form id="form-codigo" novalidate>
-      <div class="field"><label for="co-codigo">Código del centro</label><input id="co-codigo" required maxlength="6" style="font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase" placeholder="A1B2C3"></div>
-      <div class="actions"><button class="btn primary" type="submit">Unirme a mi centro</button><button class="btn link" type="button" id="co-salir">Cerrar sesión</button></div>
-      <p class="status" id="st-codigo"></p>
-    </form>
-  </div>
-</div>
-
-<!-- ================= APP ================= -->
-<div id="view-app" hidden>
-<header>
-  <div class="brand">
-    <h1>Registro IFSO México <small id="app-sub"></small></h1>
-    <div class="who"><b id="who-nombre"></b><span id="who-centro"></span><button class="btn link" type="button" id="salir">Salir</button></div>
-  </div>
-  <nav role="tablist" id="tabs"></nav>
-</header>
-
-<!-- CAPTURA -->
-<section id="sec-captura" hidden>
-  <form id="form" class="card" autocomplete="off" novalidate>
-    <input type="hidden" id="pac-id">
-    <div class="banner" id="banner-edit" hidden>Editando un paciente ya guardado. <button class="btn link" type="button" id="cancelar-edit">Cancelar edición</button></div>
-    <fieldset id="fs-centro-admin" hidden>
-      <legend>Centro</legend>
-      <div class="field"><label for="centro-admin">Registrar en el centro</label><select id="centro-admin"></select></div>
-    </fieldset>
-    <fieldset>
-      <legend>Fecha e identificación</legend>
-      <div class="grid">
-        <div class="field"><label for="fecha">Fecha de cirugía</label><input id="fecha" name="fecha" type="date" required></div>
-        <div class="field"><label for="folio">Folio / iniciales (opcional)</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>Paciente</legend>
-      <div class="grid">
-        <div class="field"><label>Sexo</label>
-          <div class="seg"><label><input type="radio" name="sexo" value="M" id="sexo-m" required>Mujer</label><label><input type="radio" name="sexo" value="H" id="sexo-h">Hombre</label></div></div>
-        <div class="field"><label for="edad">Edad (años)</label><input id="edad" name="edad" type="number" inputmode="numeric" min="10" max="100" required></div>
-        <div class="field"><label for="imc">IMC preoperatorio (kg/m²)</label><input id="imc" name="imc" type="number" inputmode="decimal" step="0.1" min="15" max="120" required></div>
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>Comorbilidades</legend>
-      <div class="seg"><label><input type="checkbox" name="dm2" id="dm2">DM2</label><label><input type="checkbox" name="has" id="has">Hipertensión (HAS)</label><label><input type="checkbox" name="dislip" id="dislip">Dislipidemia</label></div>
-    </fieldset>
-    <fieldset>
-      <legend>Cirugía</legend>
-      <div class="grid">
-        <div class="field wide"><label>Tipo</label>
-          <div class="seg"><label><input type="radio" name="tipo" value="primaria" id="tipo-p" required>Primaria</label><label><input type="radio" name="tipo" value="revisional" id="tipo-r">Revisional</label></div></div>
-        <div class="field wide"><label>Procedimiento</label>
-          <div class="seg">
-            <label><input type="radio" name="proc" value="manga" id="proc-manga" required>Manga gástrica</label>
-            <label><input type="radio" name="proc" value="oagb" id="proc-oagb">OAGB</label>
-            <label><input type="radio" name="proc" value="bypass" id="proc-bypass">Bypass en Y de Roux</label>
-            <label><input type="radio" name="proc" value="sadis" id="proc-sadis">SADI-S</label>
-            <label><input type="radio" name="proc" value="oatb" id="proc-oatb">OATB</label>
-            <label><input type="radio" name="proc" value="biparticion" id="proc-biparticion">Bipartición intestinal</label>
-            <label><input type="radio" name="proc" value="manga_endo" id="proc-manga_endo">Manga gástrica endoscópica</label>
-            <label><input type="radio" name="proc" value="allurion" id="proc-allurion">Balón Allurion</label>
-            <label><input type="radio" name="proc" value="balon" id="proc-balon">Balón endoscópico</label>
-            <label><input type="radio" name="proc" value="otra" id="proc-otra">Otra</label>
-          </div></div>
-        <div class="field wide"><label>Abordaje</label>
-          <div class="seg">
-            <label><input type="radio" name="abordaje" value="laparoscopica" id="ab-lap" required checked>Laparoscópico</label>
-            <label><input type="radio" name="abordaje" value="robotica" id="ab-rob">Robótico</label>
-            <label><input type="radio" name="abordaje" value="abierta" id="ab-abi">Abierto</label>
-            <label><input type="radio" name="abordaje" value="endoscopica" id="ab-endo">Endoscópico</label>
-          </div></div>
-      </div>
-    </fieldset>
-    <fieldset>
-      <legend>Evolución (30 días)</legend>
-      <div class="grid">
-        <div class="field"><label for="estancia">Estancia hospitalaria (días)</label><input id="estancia" name="estancia" type="number" inputmode="numeric" min="0" max="365" required></div>
-        <div class="field wide"><div class="seg"><label><input type="checkbox" name="reop" id="reop">Reoperación o readmisión</label><label><input type="checkbox" name="muerte" id="muerte">Muerte</label></div></div>
-        <div class="field wide"><label for="notas">Notas (opcional)</label><textarea id="notas" name="notas" maxlength="300" placeholder="Causa de reoperación, procedimiento 'otra', etc."></textarea></div>
-      </div>
-    </fieldset>
+  <div class="hero">
+    <h1>Registro IFSO México</h1>
+    <p id="org"></p>
+    <p>Registro nacional de cirugía bariátrica y metabólica. Cada centro captura sus pacientes en menos de un minuto; el Colegio obtiene el reporte IFSO con un clic.</p>
     <div class="actions">
-      <button class="btn primary" type="submit" id="guardar">Guardar paciente</button>
-      <button class="btn" type="reset">Limpiar</button>
+      <a class="btn primary big" href="app/">Entrar al registro</a>
+      <button class="btn big" type="button" id="instalar">Instalar app</button>
     </div>
-    <p class="status" id="st-form"></p>
-  </form>
-</section>
-
-<!-- REGISTROS -->
-<section id="sec-registros" hidden>
-  <div class="toolbar">
-    <select id="filtro-centro" hidden><option value="">Todos los centros</option></select>
-    <select id="filtro-anio"><option value="">Todos los años</option></select>
-    <span class="count" id="count-registros"></span>
-  </div>
-  <p class="hint" id="hint-registros" style="margin:0 0 10px">Toca un renglón para editarlo.</p>
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>Fecha</th><th id="th-centro" hidden>Centro</th><th>Folio</th><th>Sexo</th><th class="num">Edad</th><th class="num">IMC</th><th>Tipo</th><th>Proc.</th><th>Abordaje</th><th>Comorb.</th><th class="num">Estancia</th><th>Eventos</th><th></th></tr></thead>
-      <tbody id="tbody-registros"></tbody>
-    </table>
-    <div class="empty" id="empty-registros">Todavía no hay pacientes registrados.</div>
-  </div>
-</section>
-
-<!-- RESUMEN -->
-<section id="sec-resumen" hidden>
-  <div class="toolbar">
-    <div class="seg" id="ambito"><label><input type="radio" name="ambito" value="mio" id="ambito-mio" checked>Mi centro</label><label><input type="radio" name="ambito" value="mx" id="ambito-mx">México (todos)</label></div>
-    <select id="resumen-centro" hidden><option value="">Todos los centros (México)</option></select>
-    <select id="resumen-anio"><option value="">Todos los años</option></select>
-    <button class="btn" type="button" id="copiar">Copiar tabla</button>
-    <span class="count" id="count-resumen"></span>
-  </div>
-  <p class="hint" style="margin:0 0 10px">Mismos renglones que el formato de IFSO. Edad, IMC y estancia como mediana (mín – máx). El resumen de México no muestra cifras de ningún centro en particular.</p>
-  <div class="tablewrap summary"><table><tbody id="tbody-resumen"></tbody></table></div>
-  <p class="status" id="st-resumen"></p>
-</section>
-
-<!-- ADMIN: CENTROS -->
-<section id="sec-centros" hidden>
-  <div class="kpis" id="kpis"></div>
-  <div class="card">
-    <h2>Agregar centro</h2>
-    <form id="form-centro" novalidate>
-      <div class="grid">
-        <div class="field wide"><label for="ce-nombre">Nombre del centro / hospital</label><input id="ce-nombre" required></div>
-        <div class="field"><label for="ce-ciudad">Ciudad</label><input id="ce-ciudad"></div>
-        <div class="field"><label for="ce-estado">Estado</label><input id="ce-estado"></div>
-      </div>
-      <div class="actions"><button class="btn primary" type="submit">Crear centro y generar código</button></div>
-      <p class="status" id="st-centro"></p>
-    </form>
-  </div>
-  <p class="hint" style="margin:14px 0 8px">Cada centro recibe un código. El cirujano crea su cuenta en esta misma página y escribe el código una sola vez. "Copiar invitación" arma el mensaje listo para WhatsApp o correo. Un centro <b>inactivo</b> conserva sus datos pero ya no acepta nuevos usuarios con su código. <b>Fusionar</b> pasa todos los pacientes y usuarios de un centro a otro y elimina el primero.</p>
-  <p class="status" id="st-centros-acciones"></p>
-  <div class="tablewrap">
-    <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Código</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th>Acciones</th></tr></thead><tbody id="tbody-centros"></tbody></table>
-    <div class="empty" id="empty-centros">Aún no hay centros. Crea el primero arriba.</div>
-  </div>
-</section>
-
-<!-- ADMIN: USUARIOS -->
-<section id="sec-usuarios" hidden>
-  <p class="hint" style="margin:0 0 10px">Aquí puedes cambiar el centro de un usuario o hacerlo coordinador (administrador). Un usuario sin centro no puede capturar.</p>
-  <div class="tablewrap">
-    <table><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Centro</th><th>Alta</th></tr></thead><tbody id="tbody-usuarios"></tbody></table>
-  </div>
-  <p class="status" id="st-usuarios"></p>
-</section>
-
-<!-- ADMIN: EXPORTAR -->
-<section id="sec-exportar" hidden>
-  <div class="card">
-    <h2>Descargar Excel para IFSO</h2>
-    <p class="hint">Genera el archivo con el formato del Colegio: una columna por centro más el total de México, con todos los renglones (CENTRO, número de pacientes, mujeres, edad mediana, mín, máx…). También incluye una hoja con la base completa de pacientes, sin nombres.</p>
-    <div class="grid" style="margin-top:12px">
-      <div class="field"><label for="ex-anio">Año del reporte</label><select id="ex-anio"></select></div>
+    <p class="status" id="st-instalar"></p>
+    <div class="card" id="instalar-ayuda" style="text-align:left;max-width:520px;margin:10px auto 0">
+      <b>Cómo instalarla en tu celular</b>
+      <p class="hint" style="margin:8px 0 0"><b>iPhone (Safari):</b> toca el botón de compartir <span aria-hidden="true">⎙</span> y luego <b>“Agregar a pantalla de inicio”</b>.<br>
+      <b>Android (Chrome):</b> abre el menú <span aria-hidden="true">⋮</span> y toca <b>“Instalar app”</b> o <b>“Agregar a pantalla principal”</b>.<br>
+      <b>Computadora (Chrome / Edge):</b> icono de instalar en la barra de direcciones.</p>
     </div>
-    <div class="actions"><button class="btn primary" type="button" id="exportar">Descargar Excel</button></div>
-    <p class="status" id="st-exportar"></p>
   </div>
-</section>
-</div>
 
-<p class="status" id="st-global" style="text-align:center;padding-top:40px"></p>
-</div>
+  <div class="cards">
+    <div class="card">
+      <h3>Cirujanos y centros</h3>
+      <p>Captura por paciente (sin nombres), registros de tu centro, resumen propio y comparación con el resumen nacional anónimo.</p>
+      <div class="actions"><a class="btn" href="app/">Abrir registro</a></div>
+    </div>
+    <div class="card">
+      <h3>Residentes de cirugía bariátrica y metabólica</h3>
+      <p>Bitácora quirúrgica personal: centro, hospital público o privado, tu participación (cirujano, 1er o 2do ayudante) y los mismos datos del registro IFSO. Descargable en Excel.</p>
+      <div class="actions"><a class="btn" href="residentes/">Abrir bitácora de residentes</a></div>
+    </div>
+    <div class="card">
+      <h3>Coordinación del Colegio</h3>
+      <p>Alta de centros con código de invitación, gestión de usuarios y descarga del Excel con el formato IFSO: una columna por centro y el total de México.</p>
+      <div class="actions"><a class="btn" href="app/">Entrar como coordinador</a></div>
+    </div>
+  </div>
 
+  <div class="card">
+    <h3>Cómo empezar</h3>
+    <ol class="steps" style="margin-top:12px">
+      <li><span>Pide a tu coordinador el <b>código de tu centro</b> (seis caracteres).</span></li>
+      <li><span>Entra al registro, toca <b>“Crear cuenta nueva”</b> y escribe el código una sola vez.</span></li>
+      <li><span>Captura cada paciente operado. Toma menos de un minuto y no se guardan nombres.</span></li>
+    </ol>
+  </div>
+
+  <footer id="pie"></footer>
+</div>
 <script>
 (function(){
-  'use strict';
-  const $ = s => document.querySelector(s);
   const CFG = window.IFSO_CONFIG || {};
-  const setStatus = (el, msg, cls) => { el.textContent = msg || ''; el.className = 'status' + (cls ? ' ' + cls : ''); };
-  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const hoy = () => new Date().toISOString().slice(0,10);
-  // Procedimientos que en el formato IFSO cuentan como "otra" (se desglosan en el resumen y en la base de pacientes).
-  const OTRAS = ['sadis','oatb','biparticion','manga_endo','allurion','balon','otra'];
-  const cntOtra = arr => arr.filter(r => OTRAS.includes(r.proc)).length;
-  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
-
-  $('#auth-org').textContent = CFG.ORGANIZACION || '';
-  if (!CFG.SUPABASE_URL || CFG.SUPABASE_URL.includes('PENDIENTE')) {
-    setStatus($('#st-global'), 'La app todavía no está conectada a su base de datos (falta config.js).', 'err'); return;
-  }
-  const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-
-  // ---------- estado ----------
-  let user = null, perfil = null, centros = [], pacientes = [], perfiles = [], pendingDelete = null, tabActual = null;
-  const esAdmin = () => perfil && perfil.rol === 'admin';
-  const centroNombre = id => (centros.find(c => c.id === id) || {}).nombre || '—';
-
-  // ---------- vistas ----------
-  function mostrar(v){ ['auth','codigo','app'].forEach(x => $('#view-'+x).hidden = x !== v); }
-  function authPanel(p){ ['login','registro','olvide','nueva'].forEach(x => $('#auth-'+x).hidden = x !== p); }
-  document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => authPanel(b.dataset.auth)));
-
-  // ---------- auth ----------
-  $('#form-login').addEventListener('submit', async ev => {
-    ev.preventDefault(); setStatus($('#st-login'), 'Entrando…');
-    const { error } = await sb.auth.signInWithPassword({ email: $('#li-email').value.trim(), password: $('#li-pass').value });
-    if (error) setStatus($('#st-login'), error.message.includes('Invalid') ? 'Correo o contraseña incorrectos.' : error.message.includes('confirm') ? 'Confirma tu correo primero (revisa tu bandeja).' : 'No se pudo entrar: ' + error.message, 'err');
-    else setStatus($('#st-login'), '');
+  document.getElementById('org').textContent = CFG.ORGANIZACION || '';
+  document.getElementById('pie').textContent = (CFG.ORGANIZACION || '') + ' · Los datos se capturan sin identificadores personales.';
+  let prompt = null;
+  const btn = document.getElementById('instalar'), st = document.getElementById('st-instalar'), ayuda = document.getElementById('instalar-ayuda');
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); prompt = e; });
+  btn.addEventListener('click', async () => {
+    if (prompt) { prompt.prompt(); const r = await prompt.userChoice; prompt = null; st.textContent = r.outcome === 'accepted' ? 'App instalada. Búscala en tu pantalla de inicio.' : ''; st.className = 'status ok'; return; }
+    ayuda.classList.toggle('show');
   });
-  $('#form-registro').addEventListener('submit', async ev => {
-    ev.preventDefault();
-    const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
-    setStatus($('#st-registro'), 'Creando cuenta…');
-    const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value, options: { data: { nombre: $('#re-nombre').value.trim() } } });
-    if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
-    if (data.session) setStatus($('#st-registro'), '');
-    else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
-  });
-  $('#form-olvide').addEventListener('submit', async ev => {
-    ev.preventDefault(); setStatus($('#st-olvide'), 'Enviando…');
-    const { error } = await sb.auth.resetPasswordForEmail($('#ol-email').value.trim(), { redirectTo: location.href.split('#')[0] });
-    setStatus($('#st-olvide'), error ? 'No se pudo enviar: ' + error.message : 'Si el correo existe, te llegará un enlace para cambiar la contraseña.', error ? 'err' : 'ok');
-  });
-  $('#form-nueva').addEventListener('submit', async ev => {
-    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
-    const { error } = await sb.auth.updateUser({ password: $('#nu-pass').value });
-    if (error) setStatus($('#st-nueva'), 'No se pudo cambiar: ' + error.message, 'err');
-    else { setStatus($('#st-nueva'), 'Contraseña guardada.', 'ok'); history.replaceState(null, '', location.pathname); await cargarSesion(); }
-  });
-  $('#salir').addEventListener('click', () => sb.auth.signOut());
-  $('#co-salir').addEventListener('click', () => sb.auth.signOut());
-
-  sb.auth.onAuthStateChange((ev, session) => {
-    if (ev === 'PASSWORD_RECOVERY') { mostrar('auth'); authPanel('nueva'); return; }
-    if (ev === 'SIGNED_OUT') { user = perfil = null; mostrar('auth'); authPanel('login'); return; }
-    if (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION' || ev === 'USER_UPDATED') cargarSesion(session);
-  });
-
-  async function cargarSesion(session){
-    if (!session) { const r = await sb.auth.getSession(); session = r.data.session; }
-    if (!session) { mostrar('auth'); authPanel('login'); return; }
-    if (location.hash.includes('type=recovery')) { mostrar('auth'); authPanel('nueva'); return; }
-    user = session.user;
-    const { data, error } = await sb.from('perfiles').select('*').eq('user_id', user.id).maybeSingle();
-    if (error || !data) { setStatus($('#st-global'), 'No se pudo cargar tu perfil. Recarga la página.', 'err'); return; }
-    perfil = data;
-    if (!esAdmin() && !perfil.centro_id) { mostrar('codigo'); return; }
-    await entrarApp();
-  }
-
-  $('#form-codigo').addEventListener('submit', async ev => {
-    ev.preventDefault(); setStatus($('#st-codigo'), 'Verificando…');
-    const { data, error } = await sb.rpc('unirse_a_centro', { p_codigo: $('#co-codigo').value.trim() });
-    if (error) { setStatus($('#st-codigo'), 'Código no válido. Revísalo con tu coordinador.', 'err'); return; }
-    perfil.centro_id = data.id; await entrarApp();
-  });
-
-  // ---------- app ----------
-  const TABS_CENTRO = [['captura','Capturar'],['registros','Registros'],['resumen','Resumen']];
-  const TABS_ADMIN = [['centros','Centros'],['usuarios','Usuarios'],['captura','Capturar'],['registros','Registros'],['resumen','Resumen'],['exportar','Excel IFSO']];
-  async function entrarApp(){
-    mostrar('app');
-    $('#who-nombre').textContent = perfil.nombre || user.email;
-    $('#app-sub').textContent = esAdmin() ? 'Coordinación' : '';
-    const tabs = esAdmin() ? TABS_ADMIN : TABS_CENTRO;
-    $('#tabs').innerHTML = tabs.map(([k,l]) => `<button role="tab" data-tab="${k}" aria-selected="false">${l}</button>`).join('');
-    document.querySelectorAll('#tabs [role=tab]').forEach(b => b.addEventListener('click', () => irA(b.dataset.tab)));
-    ['fs-centro-admin','filtro-centro','th-centro','resumen-centro'].forEach(id => $('#'+id).hidden = !esAdmin());
-    $('#ambito').hidden = esAdmin();
-    await recargar();
-    $('#who-centro').textContent = esAdmin() ? '' : '· ' + centroNombre(perfil.centro_id);
-    let t = null; try { t = localStorage.getItem('ifso.tab'); } catch(e){}
-    irA(tabs.some(x => x[0] === t) ? t : (esAdmin() ? 'centros' : 'captura'));
-  }
-  function irA(tab){
-    tabActual = tab;
-    document.querySelectorAll('#tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'));
-    ['captura','registros','resumen','centros','usuarios','exportar'].forEach(s => $('#sec-'+s).hidden = s !== tab);
-    try { localStorage.setItem('ifso.tab', tab); } catch(e){}
-    if (tab === 'resumen') renderResumen();
-    if (tab === 'exportar') llenarAnios($('#ex-anio'), false);
-  }
-  async function recargar(){
-    const [c, p] = await Promise.all([
-      sb.from('centros').select('*').order('nombre'),
-      sb.from('pacientes').select('*').order('fecha', { ascending: false }).limit(10000)
-    ]);
-    centros = c.data || []; pacientes = p.data || [];
-    if (esAdmin()) { const u = await sb.from('perfiles').select('*').order('creado'); perfiles = u.data || []; }
-    renderTodo();
-  }
-  function renderTodo(){
-    const opts = centros.map(c => `<option value="${c.id}">${esc(c.nombre)}${c.activo === false ? ' (inactivo)' : ''}</option>`).join('');
-    const keep = (sel, html, first) => { const v = sel.value; sel.innerHTML = first + html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
-    keep($('#filtro-centro'), opts, '<option value="">Todos los centros</option>');
-    keep($('#resumen-centro'), opts, '<option value="">Todos los centros (México)</option>');
-    keep($('#centro-admin'), opts, '');
-    llenarAnios($('#filtro-anio'), true); llenarAnios($('#resumen-anio'), true);
-    renderRegistros(); if (tabActual === 'resumen') renderResumen();
-    if (esAdmin()) { renderCentros(); renderUsuarios(); }
-  }
-  function anios(){ const s = new Set(pacientes.map(p => p.fecha.slice(0,4))); s.add(String(new Date().getFullYear())); return [...s].sort().reverse(); }
-  function llenarAnios(sel, conTodos){
-    const v = sel.value;
-    sel.innerHTML = (conTodos ? '<option value="">Todos los años</option>' : '') + anios().map(a => `<option value="${a}">${a}</option>`).join('');
-    sel.value = [...sel.options].some(o => o.value === v) ? v : (conTodos ? '' : anios()[0]);
-  }
-
-  // ---------- captura ----------
-  $('#fecha').value = hoy();
-  $('#form').addEventListener('submit', async ev => {
-    ev.preventDefault(); const f = ev.target;
-    if (!f.checkValidity()) { setStatus($('#st-form'), 'Faltan campos obligatorios.', 'err'); f.reportValidity(); return; }
-    const fd = new FormData(f);
-    const doc = {
-      centro_id: esAdmin() ? $('#centro-admin').value : perfil.centro_id,
-      fecha: fd.get('fecha'), folio: String(fd.get('folio')||'').trim() || null,
-      sexo: fd.get('sexo'), edad: Number(fd.get('edad')), imc: Number(fd.get('imc')),
-      dm2: !!fd.get('dm2'), has: !!fd.get('has'), dislip: !!fd.get('dislip'),
-      tipo: fd.get('tipo'), proc: fd.get('proc'), abordaje: fd.get('abordaje'),
-      estancia: Number(fd.get('estancia')), reop: !!fd.get('reop'), muerte: !!fd.get('muerte'),
-      notas: String(fd.get('notas')||'').trim() || null
-    };
-    if (!doc.centro_id) { setStatus($('#st-form'), 'Elige el centro.', 'err'); return; }
-    $('#guardar').disabled = true; setStatus($('#st-form'), 'Guardando…');
-    const id = $('#pac-id').value;
-    const q = id ? sb.from('pacientes').update(doc).eq('id', id) : sb.from('pacientes').insert(Object.assign({ creado_por: user.id }, doc));
-    const { error } = await q;
-    $('#guardar').disabled = false;
-    if (error) { setStatus($('#st-form'), 'No se guardó: ' + error.message, 'err'); return; }
-    const fecha = doc.fecha, centroSel = $('#centro-admin').value;
-    resetSilencioso = true; f.reset(); $('#fecha').value = fecha; $('#ab-lap').checked = true; $('#centro-admin').value = centroSel;
-    salirEdicion(); setStatus($('#st-form'), id ? 'Cambios guardados.' : 'Paciente guardado. Listo para el siguiente.', 'ok');
-    $('#edad').focus(); await recargar();
-  });
-  let resetSilencioso = false;
-  $('#form').addEventListener('reset', () => { const s = resetSilencioso; resetSilencioso = false; setTimeout(() => { if (!s) { $('#fecha').value = hoy(); setStatus($('#st-form'), ''); } $('#ab-lap').checked = true; }, 0); });
-  function salirEdicion(){ $('#pac-id').value = ''; $('#banner-edit').hidden = true; $('#guardar').textContent = 'Guardar paciente'; }
-  $('#cancelar-edit').addEventListener('click', () => { $('#form').reset(); salirEdicion(); });
-  function editar(p){
-    $('#pac-id').value = p.id; $('#banner-edit').hidden = false; $('#guardar').textContent = 'Guardar cambios';
-    $('#centro-admin').value = p.centro_id; $('#fecha').value = p.fecha; $('#folio').value = p.folio || '';
-    (p.sexo === 'M' ? $('#sexo-m') : $('#sexo-h')).checked = true; $('#edad').value = p.edad; $('#imc').value = p.imc;
-    $('#dm2').checked = p.dm2; $('#has').checked = p.has; $('#dislip').checked = p.dislip;
-    (p.tipo === 'primaria' ? $('#tipo-p') : $('#tipo-r')).checked = true;
-    $('#proc-' + p.proc).checked = true; $('#ab-' + ({laparoscopica:'lap',robotica:'rob',abierta:'abi',endoscopica:'endo'})[p.abordaje]).checked = true;
-    $('#estancia').value = p.estancia; $('#reop').checked = p.reop; $('#muerte').checked = p.muerte; $('#notas').value = p.notas || '';
-    irA('captura'); window.scrollTo({ top: 0 });
-  }
-
-  // ---------- registros ----------
-  function filtrados(selCentro, selAnio){
-    const c = selCentro ? selCentro.value : '', a = selAnio ? selAnio.value : '';
-    return pacientes.filter(p => (!c || p.centro_id === c) && (!a || p.fecha.startsWith(a)));
-  }
-  function renderRegistros(){
-    const rows = filtrados($('#filtro-centro'), $('#filtro-anio'));
-    $('#count-registros').textContent = rows.length + ' paciente' + (rows.length === 1 ? '' : 's');
-    $('#empty-registros').hidden = rows.length > 0;
-    $('#tbody-registros').innerHTML = rows.map(r => {
-      const com = [r.dm2&&'DM2', r.has&&'HAS', r.dislip&&'Dislip'].filter(Boolean).join(', ') || '—';
-      const ev = [r.reop&&'<span class="pill rev">Reop/readm</span>', r.muerte&&'<span class="pill muerte">Muerte</span>'].filter(Boolean).join(' ') || '—';
-      const del = pendingDelete === r.id ? `<button class="rowbtn confirm" data-del="${r.id}" data-confirm="1">Confirmar borrar</button>` : `<button class="rowbtn" data-del="${r.id}">Borrar</button>`;
-      return `<tr class="click" data-edit="${r.id}"><td>${esc(r.fecha)}</td><td ${esAdmin()?'':'hidden'}>${esc(centroNombre(r.centro_id))}</td><td>${esc(r.folio||'—')}</td><td>${r.sexo==='M'?'Mujer':'Hombre'}</td>
-        <td class="num">${r.edad}</td><td class="num">${Number(r.imc).toFixed(1)}</td><td><span class="pill${r.tipo==='revisional'?' rev':''}">${L.tipo[r.tipo]}</span></td>
-        <td>${L.proc[r.proc]}</td><td>${L.abordaje[r.abordaje]}</td><td>${com}</td><td class="num">${r.estancia}</td><td>${ev}</td><td>${del}</td></tr>`;
-    }).join('');
-  }
-  $('#filtro-centro').addEventListener('change', renderRegistros);
-  $('#filtro-anio').addEventListener('change', renderRegistros);
-  $('#tbody-registros').addEventListener('click', async ev => {
-    const b = ev.target.closest('[data-del]');
-    if (b) {
-      if (!b.dataset.confirm) { pendingDelete = b.dataset.del; renderRegistros(); setTimeout(() => { if (pendingDelete === b.dataset.del) { pendingDelete = null; renderRegistros(); } }, 5000); return; }
-      pendingDelete = null;
-      const { error } = await sb.from('pacientes').delete().eq('id', b.dataset.del);
-      if (error) setStatus($('#st-form'), 'No se pudo borrar: ' + error.message, 'err');
-      await recargar(); return;
-    }
-    const tr = ev.target.closest('[data-edit]'); if (!tr) return;
-    const p = pacientes.find(x => x.id === tr.dataset.edit); if (p) editar(p);
-  });
-
-  // ---------- resumen (renglones IFSO) ----------
-  const med = a => { if (!a.length) return null; const s=[...a].map(Number).sort((x,y)=>x-y); const m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
-  const mn = a => a.length ? Math.min(...a.map(Number)) : null, mx = a => a.length ? Math.max(...a.map(Number)) : null;
-  const fmt = v => v == null ? '—' : (Number.isInteger(v) ? String(v) : v.toFixed(1));
-  const stat = a => a.length ? `${fmt(med(a))} (${fmt(mn(a))} – ${fmt(mx(a))})` : '—';
-  const pct = (n, d) => d ? `${n} (${(100*n/d).toFixed(1)}%)` : '0';
-  function resumenRows(rs){
-    const M = rs.filter(r=>r.sexo==='M'), H = rs.filter(r=>r.sexo==='H');
-    const prim = rs.filter(r=>r.tipo==='primaria'), rev = rs.filter(r=>r.tipo==='revisional');
-    const cnt = (arr,k,v) => arr.filter(r=>r[k]===v).length;
-    const otras = arr => OTRAS.map(v => [`   · ${L.proc[v]}`, cnt(arr,'proc',v)]);
-    return [
-      ['g','Pacientes'],['Número de pacientes', rs.length],['Mujeres', pct(M.length, rs.length)],['Edad mujeres · mediana (mín – máx)', stat(M.map(r=>r.edad))],
-      ['Hombres', pct(H.length, rs.length)],['Edad hombres · mediana (mín – máx)', stat(H.map(r=>r.edad))],
-      ['IMC mujeres · mediana (mín – máx)', stat(M.map(r=>r.imc))],['IMC hombres · mediana (mín – máx)', stat(H.map(r=>r.imc))],
-      ['g','Cirugías primarias'],['Primaria manga', cnt(prim,'proc','manga')],['Primaria OAGB', cnt(prim,'proc','oagb')],['Primaria bypass', cnt(prim,'proc','bypass')],['Primaria otra (total)', cntOtra(prim)], ...otras(prim),
-      ['g','Cirugías revisionales'],['Revisional manga', cnt(rev,'proc','manga')],['Revisional OAGB', cnt(rev,'proc','oagb')],['Revisional bypass', cnt(rev,'proc','bypass')],['Revisional otra (total)', cntOtra(rev)], ...otras(rev),
-      ['g','Comorbilidades'],['DM2 hombres', pct(H.filter(r=>r.dm2).length, H.length)],['DM2 mujeres', pct(M.filter(r=>r.dm2).length, M.length)],
-      ['HAS hombres', pct(H.filter(r=>r.has).length, H.length)],['HAS mujeres', pct(M.filter(r=>r.has).length, M.length)],
-      ['Dislipidemia hombres', pct(H.filter(r=>r.dislip).length, H.length)],['Dislipidemia mujeres', pct(M.filter(r=>r.dislip).length, M.length)],
-      ['g','Evolución'],['Estancia hospitalaria (días) · mediana (mín – máx)', stat(rs.map(r=>r.estancia))],['Reoperación / readmisión', pct(rs.filter(r=>r.reop).length, rs.length)],['Muerte', pct(rs.filter(r=>r.muerte).length, rs.length)],
-      ['g','Abordaje'],['Primaria abierta', cnt(prim,'abordaje','abierta')],['Primaria laparoscópica', cnt(prim,'abordaje','laparoscopica')],['Primaria robótica', cnt(prim,'abordaje','robotica')],['Primaria endoscópica', cnt(prim,'abordaje','endoscopica')],
-      ['Revisional abierta', cnt(rev,'abordaje','abierta')],['Revisional laparoscópica', cnt(rev,'abordaje','laparoscopica')],['Revisional robótica', cnt(rev,'abordaje','robotica')],['Revisional endoscópica', cnt(rev,'abordaje','endoscopica')],
-    ];
-  }
-  let ultimoResumen = { rows: [], label: '' };
-  async function renderResumen(){
-    const anio = $('#resumen-anio').value;
-    const mx = !esAdmin() && $('#ambito-mx').checked;
-    let rs, label;
-    if (mx) {
-      setStatus($('#st-resumen'), 'Calculando resumen de México…');
-      const { data, error } = await sb.rpc('pacientes_anonimos', { p_anio: anio ? Number(anio) : null });
-      if (error) { setStatus($('#st-resumen'), 'No se pudo obtener el resumen nacional.', 'err'); return; }
-      rs = data || []; label = 'México'; setStatus($('#st-resumen'), '');
-    } else {
-      const c = esAdmin() ? $('#resumen-centro').value : perfil.centro_id;
-      rs = pacientes.filter(p => (!c || p.centro_id === c) && (!anio || p.fecha.startsWith(anio)));
-      label = c ? centroNombre(c) : 'México';
-    }
-    const rows = resumenRows(rs); ultimoResumen = { rows, label: label + (anio ? ' ' + anio : '') };
-    $('#count-resumen').textContent = `${rs.length} paciente${rs.length===1?'':'s'} · ${ultimoResumen.label}`;
-    $('#tbody-resumen').innerHTML = rows.map(r => r[0]==='g' ? `<tr class="group"><td colspan="2">${esc(r[1])}</td></tr>` : `<tr><td>${esc(r[0])}</td><td class="num">${esc(r[1])}</td></tr>`).join('');
-  }
-  document.querySelectorAll('#ambito input').forEach(i => i.addEventListener('change', renderResumen));
-  $('#resumen-centro').addEventListener('change', renderResumen); $('#resumen-anio').addEventListener('change', renderResumen);
-  $('#copiar').addEventListener('click', async () => {
-    const txt = 'CENTRO\t' + ultimoResumen.label + '\n' + ultimoResumen.rows.filter(r=>r[0]!=='g').map(r => r[0] + '\t' + r[1]).join('\n');
-    try { await navigator.clipboard.writeText(txt); setStatus($('#st-resumen'), 'Tabla copiada. Pégala en Excel.', 'ok'); }
-    catch(e) { setStatus($('#st-resumen'), 'No se pudo copiar automáticamente; selecciona la tabla y cópiala a mano.', 'err'); }
-  });
-
-  // ---------- admin: centros ----------
-  $('#form-centro').addEventListener('submit', async ev => {
-    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
-    setStatus($('#st-centro'), 'Creando…');
-    const { error } = await sb.from('centros').insert({ nombre: $('#ce-nombre').value.trim(), ciudad: $('#ce-ciudad').value.trim() || null, estado: $('#ce-estado').value.trim() || null });
-    if (error) { setStatus($('#st-centro'), error.code === '23505' ? 'Ya existe un centro con ese nombre.' : 'No se pudo crear: ' + error.message, 'err'); return; }
-    f.reset(); setStatus($('#st-centro'), 'Centro creado.', 'ok'); await recargar();
-  });
-  function renderCentros(){
-    const nUsers = id => perfiles.filter(p => p.centro_id === id).length, nPac = id => pacientes.filter(p => p.centro_id === id).length;
-    $('#kpis').innerHTML = [[centros.length,'centros'],[perfiles.length,'usuarios'],[pacientes.length,'pacientes'],[pacientes.filter(p=>p.fecha.startsWith(String(new Date().getFullYear()))).length,'pacientes ' + new Date().getFullYear()]]
-      .map(([n,l]) => `<div class="kpi"><b>${n}</b><span>${l}</span></div>`).join('');
-    $('#empty-centros').hidden = centros.length > 0;
-    $('#tbody-centros').innerHTML = centros.map(c => {
-      const otros = centros.filter(o => o.id !== c.id).map(o => `<option value="${o.id}">${esc(o.nombre)}</option>`).join('');
-      let acciones;
-      if (accionCentro.id === c.id && accionCentro.tipo === 'renombrar') {
-        acciones = `<input data-nombre="${c.id}" value="${esc(c.nombre)}" style="min-height:34px;padding:4px 8px;width:220px"> <button class="rowbtn confirm" data-ok="renombrar" data-id="${c.id}">Guardar</button> <button class="rowbtn" data-cancel="1">Cancelar</button>`;
-      } else if (accionCentro.id === c.id && accionCentro.tipo === 'fusionar') {
-        acciones = otros ? `Pasar todo a: <select data-destino="${c.id}" style="min-height:34px;padding:4px 8px;width:220px">${otros}</select> <button class="rowbtn confirm" data-ok="fusionar" data-id="${c.id}">Fusionar y eliminar "${esc(c.nombre)}"</button> <button class="rowbtn" data-cancel="1">Cancelar</button>` : `No hay otro centro al cual fusionar. <button class="rowbtn" data-cancel="1">Cerrar</button>`;
-      } else if (accionCentro.id === c.id && accionCentro.tipo === 'borrar') {
-        acciones = `¿Borrar "${esc(c.nombre)}"? <button class="rowbtn confirm" data-ok="borrar" data-id="${c.id}">Sí, borrar</button> <button class="rowbtn" data-cancel="1">Cancelar</button>`;
-      } else {
-        acciones = `<button class="rowbtn" data-inv="${c.id}">Copiar invitación</button> <button class="rowbtn" data-accion="renombrar" data-id="${c.id}">Renombrar</button> <button class="rowbtn" data-accion="toggle" data-id="${c.id}">${c.activo ? 'Desactivar' : 'Reactivar'}</button> <button class="rowbtn" data-accion="fusionar" data-id="${c.id}">Fusionar</button>` + (nPac(c.id) === 0 ? ` <button class="rowbtn" data-accion="borrar" data-id="${c.id}">Borrar</button>` : '');
-      }
-      return `<tr><td>${esc(c.nombre)}${c.activo ? '' : ' <span class="pill rev">Inactivo</span>'}</td><td>${esc([c.ciudad,c.estado].filter(Boolean).join(', ')||'—')}</td><td><span class="code">${esc(c.codigo)}</span></td>
-      <td class="num">${nUsers(c.id)}</td><td class="num">${nPac(c.id)}</td><td style="white-space:normal;min-width:260px">${acciones}</td></tr>`;
-    }).join('');
-  }
-  let accionCentro = { id: null, tipo: null };
-  $('#tbody-centros').addEventListener('click', async ev => {
-    const st = $('#st-centros-acciones');
-    const inv = ev.target.closest('[data-inv]');
-    if (inv) {
-      const c = centros.find(x => x.id === inv.dataset.inv);
-      const msg = `Registro IFSO México – ${c.nombre}\n\n1. Abre ${location.href.split('#')[0]}\n2. Toca "Crear cuenta nueva" (nombre, correo y contraseña).\n3. Escribe el código de tu centro: ${c.codigo}\n\nDespués de eso solo captura cada paciente operado. Toma menos de un minuto por paciente.`;
-      try { await navigator.clipboard.writeText(msg); inv.textContent = 'Copiado'; setTimeout(() => inv.textContent = 'Copiar invitación', 2000); } catch(e) { setStatus(st, 'No se pudo copiar. Código: ' + c.codigo, 'err'); }
-      return;
-    }
-    if (ev.target.closest('[data-cancel]')) { accionCentro = { id: null, tipo: null }; renderCentros(); return; }
-    const a = ev.target.closest('[data-accion]');
-    if (a) {
-      const c = centros.find(x => x.id === a.dataset.id);
-      if (a.dataset.accion === 'toggle') {
-        const { error } = await sb.from('centros').update({ activo: !c.activo }).eq('id', c.id);
-        setStatus(st, error ? 'No se pudo cambiar: ' + error.message : (c.activo ? `"${c.nombre}" desactivado: su código ya no admite nuevos usuarios.` : `"${c.nombre}" reactivado.`), error ? 'err' : 'ok');
-        await recargar(); return;
-      }
-      accionCentro = { id: c.id, tipo: a.dataset.accion }; renderCentros(); return;
-    }
-    const ok = ev.target.closest('[data-ok]');
-    if (ok) {
-      const c = centros.find(x => x.id === ok.dataset.id); let error = null, msg = '';
-      if (ok.dataset.ok === 'renombrar') {
-        const nombre = $(`[data-nombre="${c.id}"]`).value.trim(); if (!nombre) return;
-        ({ error } = await sb.from('centros').update({ nombre }).eq('id', c.id)); msg = `Centro renombrado a "${nombre}".`;
-      } else if (ok.dataset.ok === 'fusionar') {
-        const destino = $(`[data-destino="${c.id}"]`).value; const d = centros.find(x => x.id === destino);
-        const r = await sb.rpc('admin_fusionar_centros', { p_origen: c.id, p_destino: destino }); error = r.error; msg = `Listo: ${r.data ?? 0} paciente(s) y los usuarios de "${c.nombre}" pasaron a "${d.nombre}". "${c.nombre}" fue eliminado.`;
-      } else if (ok.dataset.ok === 'borrar') {
-        ({ error } = await sb.rpc('admin_borrar_centro', { p_id: c.id })); msg = `"${c.nombre}" borrado.`;
-      }
-      accionCentro = { id: null, tipo: null };
-      setStatus(st, error ? 'No se pudo: ' + (error.code === '23505' ? 'ya existe un centro con ese nombre.' : error.message) : msg, error ? 'err' : 'ok');
-      await recargar();
-    }
-  });
-
-  // ---------- admin: usuarios ----------
-  function renderUsuarios(){
-    const opts = '<option value="">— sin centro —</option>' + centros.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
-    $('#tbody-usuarios').innerHTML = perfiles.map(p => `<tr>
-      <td>${esc(p.nombre||'—')}</td><td>${esc(p.email||'')}</td>
-      <td><select data-rol="${p.user_id}" ${p.user_id===user.id?'disabled':''}><option value="centro" ${p.rol==='centro'?'selected':''}>Centro</option><option value="admin" ${p.rol==='admin'?'selected':''}>Coordinador</option></select></td>
-      <td><select data-centro="${p.user_id}">${opts}</select></td><td>${esc((p.creado||'').slice(0,10))}</td></tr>`).join('');
-    perfiles.forEach(p => { const s = $(`[data-centro="${p.user_id}"]`); if (s) s.value = p.centro_id || ''; });
-  }
-  $('#tbody-usuarios').addEventListener('change', async ev => {
-    const s = ev.target; const uid = s.dataset.rol || s.dataset.centro; if (!uid) return;
-    const p = perfiles.find(x => x.user_id === uid);
-    const rol = s.dataset.rol ? s.value : p.rol, centro = s.dataset.centro ? (s.value || null) : p.centro_id;
-    const { error } = await sb.rpc('admin_actualizar_perfil', { p_user: uid, p_rol: rol, p_centro: centro });
-    setStatus($('#st-usuarios'), error ? 'No se pudo guardar: ' + error.message : 'Guardado.', error ? 'err' : 'ok');
-    await recargar();
-  });
-
-  // ---------- admin: exportar Excel IFSO ----------
-  const FILAS_IFSO = ['CENTRO','numero de pacientes','mujeres','edad mediana','min','mx','hombres','edad mediana','min','max','primaria manga','prim OAGB','prim bypass','otra','revisional manga','rev OAGB','rev bypass','rev otra','IMC hombres','max','min','IMC mujeres','max','min','DM2 hombres','DM2 mujeres','HAS hombres','HAS mujeres','Dislip H','Dislip M','Estancia Hosp','Reoperacion / readmision','muerte','primaria abierta','primara laparos','primaria robot','primaria endoscopica','revisional abierta','revisional robot','revisional endoscopica'];
-  function columnaIFSO(nombre, rs){
-    const M = rs.filter(r=>r.sexo==='M'), H = rs.filter(r=>r.sexo==='H'), prim = rs.filter(r=>r.tipo==='primaria'), rev = rs.filter(r=>r.tipo==='revisional');
-    const cnt = (arr,k,v) => arr.filter(r=>r[k]===v).length, e = a => a.map(r=>Number(r.edad)), i = a => a.map(r=>Number(r.imc));
-    return [nombre, rs.length, M.length, med(e(M)), mn(e(M)), mx(e(M)), H.length, med(e(H)), mn(e(H)), mx(e(H)),
-      cnt(prim,'proc','manga'), cnt(prim,'proc','oagb'), cnt(prim,'proc','bypass'), cntOtra(prim),
-      cnt(rev,'proc','manga'), cnt(rev,'proc','oagb'), cnt(rev,'proc','bypass'), cntOtra(rev),
-      med(i(H)), mx(i(H)), mn(i(H)), med(i(M)), mx(i(M)), mn(i(M)),
-      H.filter(r=>r.dm2).length, M.filter(r=>r.dm2).length, H.filter(r=>r.has).length, M.filter(r=>r.has).length, H.filter(r=>r.dislip).length, M.filter(r=>r.dislip).length,
-      med(rs.map(r=>Number(r.estancia))), rs.filter(r=>r.reop).length, rs.filter(r=>r.muerte).length,
-      cnt(prim,'abordaje','abierta'), cnt(prim,'abordaje','laparoscopica'), cnt(prim,'abordaje','robotica'), cnt(prim,'abordaje','endoscopica'),
-      cnt(rev,'abordaje','abierta'), cnt(rev,'abordaje','robotica'), cnt(rev,'abordaje','endoscopica')];
-  }
-  $('#exportar').addEventListener('click', () => {
-    const anio = $('#ex-anio').value;
-    const rs = pacientes.filter(p => !anio || p.fecha.startsWith(anio));
-    const cols = centros.map(c => columnaIFSO(c.nombre, rs.filter(p => p.centro_id === c.id))).concat([columnaIFSO('TOTAL MÉXICO', rs)]);
-    const hoja1 = FILAS_IFSO.map((f, i) => [f].concat(cols.map(c => c[i] == null ? '' : c[i])));
-    const base = [['centro','fecha','folio','sexo','edad','imc','dm2','has','dislip','tipo','procedimiento','abordaje','estancia_dias','reop_readmision','muerte','notas']]
-      .concat(rs.map(p => [centroNombre(p.centro_id), p.fecha, p.folio||'', p.sexo, p.edad, Number(p.imc), p.dm2?1:0, p.has?1:0, p.dislip?1:0, p.tipo, L.proc[p.proc] || p.proc, p.abordaje, p.estancia, p.reop?1:0, p.muerte?1:0, p.notas||'']));
-    const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.aoa_to_sheet(hoja1); ws1['!cols'] = [{wch:28}].concat(cols.map(() => ({wch:22})));
-    XLSX.utils.book_append_sheet(wb, ws1, 'Hoja1');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(base), 'Base pacientes');
-    XLSX.writeFile(wb, `IFSO_Mexico_${anio || 'todos'}.xlsx`);
-    setStatus($('#st-exportar'), `Excel generado: ${rs.length} pacientes, ${centros.length} centros.`, 'ok');
-  });
-
-  // ---------- arranque ----------
-  mostrar('auth'); authPanel('login');
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) { btn.hidden = true; }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
