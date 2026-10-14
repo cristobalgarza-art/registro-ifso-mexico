@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bitácora de Residentes · Registro IFSO México</title>
+<meta name="theme-color" content="#0b4f7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Residentes IFSO">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../estilos.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="../config.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ================= AUTH ================= -->
+<div id="view-auth" class="auth" hidden>
+  <h1>Bitácora de Residentes</h1>
+  <p class="org" id="auth-org"></p>
+  <div class="card">
+    <div id="auth-login">
+      <h2>Entrar</h2>
+      <form id="form-login" novalidate>
+        <div class="grid">
+          <div class="field wide"><label for="li-email">Correo</label><input id="li-email" type="email" autocomplete="username" required></div>
+          <div class="field wide"><label for="li-pass">Contraseña</label><input id="li-pass" type="password" autocomplete="current-password" required></div>
+        </div>
+        <div class="actions"><button class="btn primary" type="submit">Entrar</button></div>
+        <p class="status" id="st-login"></p>
+      </form>
+      <div class="actions">
+        <button class="btn link" type="button" data-auth="registro">Soy residente, crear mi cuenta</button>
+        <button class="btn link" type="button" data-auth="olvide">Olvidé mi contraseña</button>
+      </div>
+      <p class="hint" style="margin-top:14px">¿Eres cirujano de un centro? Tu registro está en <a href="../app/">la app del registro nacional</a>.</p>
+    </div>
+
+    <div id="auth-registro" hidden>
+      <h2>Crear cuenta de residente</h2>
+      <form id="form-registro" novalidate>
+        <div class="grid">
+          <div class="field wide"><label for="re-nombre">Nombre completo</label><input id="re-nombre" required placeholder="Dr. Nombre Apellido"></div>
+          <div class="field wide"><label for="re-sede">Hospital / programa de residencia</label><input id="re-sede" required placeholder="Hospital General de…"></div>
+          <div class="field wide"><label for="re-anio">Año</label>
+            <select id="re-anio" required><option value="">Elige…</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option><option>R5</option><option>Fellow cirugía bariátrica</option><option>Otro</option></select></div>
+          <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
+          <div class="field wide"><label for="re-pass">Contraseña (mínimo 8 caracteres)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+        </div>
+        <div class="actions"><button class="btn primary" type="submit">Crear cuenta</button><button class="btn link" type="button" data-auth="login">Ya tengo cuenta</button></div>
+        <p class="status" id="st-registro"></p>
+      </form>
+    </div>
+
+    <div id="auth-olvide" hidden>
+      <h2>Recuperar contraseña</h2>
+      <form id="form-olvide" novalidate>
+        <div class="field"><label for="ol-email">Correo</label><input id="ol-email" type="email" required></div>
+        <div class="actions"><button class="btn primary" type="submit">Enviar enlace</button><button class="btn link" type="button" data-auth="login">Volver</button></div>
+        <p class="status" id="st-olvide"></p>
+      </form>
+    </div>
+
+    <div id="auth-nueva" hidden>
+      <h2>Nueva contraseña</h2>
+      <form id="form-nueva" novalidate>
+        <div class="field"><label for="nu-pass">Contraseña nueva (mínimo 8 caracteres)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
+        <p class="status" id="st-nueva"></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="view-app" hidden>
+<header>
+  <div class="brand">
+    <h1>Bitácora de Residentes <small id="app-sub"></small></h1>
+    <div class="who"><b id="who-nombre"></b><span id="who-sede"></span><button class="btn link" type="button" id="salir">Salir</button></div>
+  </div>
+  <nav role="tablist" id="tabs"></nav>
+</header>
+
+<!-- CAPTURA -->
+<section id="sec-captura" hidden>
+  <form id="form" class="card" autocomplete="off" novalidate>
+    <input type="hidden" id="caso-id">
+    <div class="banner" id="banner-edit" hidden>Editando un caso ya guardado. <button class="btn link" type="button" id="cancelar-edit">Cancelar edición</button></div>
+    <fieldset>
+      <legend>Cirugía y participación</legend>
+      <div class="grid">
+        <div class="field"><label for="fecha">Fecha de cirugía</label><input id="fecha" name="fecha" type="date" required></div>
+        <div class="field"><label for="centro">Centro / hospital donde se operó</label><input id="centro" name="centro" list="centros-previos" required maxlength="80"><datalist id="centros-previos"></datalist></div>
+        <div class="field"><label>Hospital</label>
+          <div class="seg"><label><input type="radio" name="sector" value="publico" id="sector-pub" required>Público</label><label><input type="radio" name="sector" value="privado" id="sector-priv">Privado</label></div></div>
+        <div class="field wide"><label>Mi participación</label>
+          <div class="seg"><label><input type="radio" name="participacion" value="cirujano" id="part-cir" required>Cirujano</label><label><input type="radio" name="participacion" value="primer_ayudante" id="part-1">1er ayudante</label><label><input type="radio" name="participacion" value="segundo_ayudante" id="part-2">2do ayudante</label></div></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Paciente</legend>
+      <div class="grid">
+        <div class="field"><label for="folio">Folio / iniciales (opcional)</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
+        <div class="field"><label>Sexo</label>
+          <div class="seg"><label><input type="radio" name="sexo" value="M" id="sexo-m" required>Mujer</label><label><input type="radio" name="sexo" value="H" id="sexo-h">Hombre</label></div></div>
+        <div class="field"><label for="edad">Edad (años)</label><input id="edad" name="edad" type="number" inputmode="numeric" min="10" max="100" required></div>
+        <div class="field"><label for="imc">IMC preoperatorio (kg/m²)</label><input id="imc" name="imc" type="number" inputmode="decimal" step="0.1" min="15" max="120" required></div>
+        <div class="field"><label>Paciente</label>
+          <div class="seg"><label><input type="radio" name="origen" value="nacional" id="origen-nac" checked>Nacional</label><label><input type="radio" name="origen" value="internacional" id="origen-int">Internacional</label></div></div>
+        <div class="field wide"><label>¿El paciente usa o ha usado agonista GLP-1?</label>
+          <div class="seg"><label><input type="radio" name="glp1" value="si" id="glp1-si" required>Sí</label><label><input type="radio" name="glp1" value="no" id="glp1-no">No</label></div></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Comorbilidades</legend>
+      <div class="seg"><label><input type="checkbox" name="dm2" id="dm2">DM2</label><label><input type="checkbox" name="has" id="has">Hipertensión (HAS)</label><label><input type="checkbox" name="dislip" id="dislip">Dislipidemia</label></div>
+    </fieldset>
+    <fieldset>
+      <legend>Procedimiento</legend>
+      <div class="grid">
+        <div class="field wide"><label>Tipo</label>
+          <div class="seg"><label><input type="radio" name="tipo" value="primaria" id="tipo-p" required>Primaria</label><label><input type="radio" name="tipo" value="revisional" id="tipo-r">Revisional</label></div></div>
+        <div class="field wide"><label>Procedimiento</label>
+          <div class="seg">
+            <label><input type="radio" name="proc" value="manga" id="proc-manga" required>Manga gástrica</label>
+            <label><input type="radio" name="proc" value="oagb" id="proc-oagb">OAGB</label>
+            <label><input type="radio" name="proc" value="bypass" id="proc-bypass">Bypass en Y de Roux</label>
+            <label><input type="radio" name="proc" value="sadis" id="proc-sadis">SADI-S</label>
+            <label><input type="radio" name="proc" value="oatb" id="proc-oatb">OATB</label>
+            <label><input type="radio" name="proc" value="biparticion" id="proc-biparticion">Bipartición intestinal</label>
+            <label><input type="radio" name="proc" value="manga_endo" id="proc-manga_endo">Manga gástrica endoscópica</label>
+            <label><input type="radio" name="proc" value="allurion" id="proc-allurion">Balón Allurion</label>
+            <label><input type="radio" name="proc" value="balon" id="proc-balon">Balón endoscópico</label>
+            <label><input type="radio" name="proc" value="otra" id="proc-otra">Otra</label>
+          </div></div>
+        <div class="field wide"><label>Abordaje</label>
+          <div class="seg">
+            <label><input type="radio" name="abordaje" value="laparoscopica" id="ab-lap" required checked>Laparoscópico</label>
+            <label><input type="radio" name="abordaje" value="robotica" id="ab-rob">Robótico</label>
+            <label><input type="radio" name="abordaje" value="abierta" id="ab-abi">Abierto</label>
+            <label><input type="radio" name="abordaje" value="endoscopica" id="ab-endo">Endoscópico</label>
+          </div></div>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Evolución (30 días)</legend>
+      <div class="grid">
+        <div class="field"><label for="estancia">Estancia hospitalaria (días)</label><input id="estancia" name="estancia" type="number" inputmode="numeric" min="0" max="365" required></div>
+        <div class="field wide"><div class="seg"><label><input type="checkbox" name="reop" id="reop">Reoperación o readmisión</label><label><input type="checkbox" name="muerte" id="muerte">Muerte</label></div></div>
+        <div class="field wide"><label for="notas">Notas (opcional)</label><textarea id="notas" name="notas" maxlength="300" placeholder="Hallazgos, procedimiento 'otra', etc."></textarea></div>
+      </div>
+    </fieldset>
+    <div class="actions">
+      <button class="btn primary" type="submit" id="guardar">Guardar caso</button>
+      <button class="btn" type="reset">Limpiar</button>
+    </div>
+    <p class="status" id="st-form"></p>
+  </form>
+</section>
+
+<!-- CASOS -->
+<section id="sec-casos" hidden>
+  <div class="kpis" id="kpis"></div>
+  <div class="toolbar">
+    <select id="filtro-anio"><option value="">Todos los años</option></select>
+    <select id="filtro-part"><option value="">Toda participación</option><option value="cirujano">Cirujano</option><option value="primer_ayudante">1er ayudante</option><option value="segundo_ayudante">2do ayudante</option></select>
+    <button class="btn" type="button" id="exportar">Descargar mi bitácora (Excel)</button>
+    <span class="count" id="count-casos"></span>
+  </div>
+  <p class="hint" style="margin:0 0 10px">Toca un renglón para editarlo.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Fecha</th><th>Centro</th><th>Participación</th><th>Folio</th><th>Sexo</th><th class="num">Edad</th><th class="num">IMC</th><th>Tipo</th><th>Proc.</th><th>Abordaje</th><th>Comorb.</th><th class="num">Estancia</th><th>Eventos</th><th></th></tr></thead>
+      <tbody id="tbody-casos"></tbody>
+    </table>
+    <div class="empty" id="empty-casos">Todavía no has registrado casos.</div>
+  </div>
+  <p class="status" id="st-casos"></p>
+</section>
+
+<!-- RESUMEN -->
+<section id="sec-resumen" hidden>
+  <div class="toolbar">
+    <select id="resumen-anio"><option value="">Todos los años</option></select>
+    <span class="count" id="count-resumen"></span>
+  </div>
+  <p class="hint" style="margin:0 0 10px">Tu experiencia quirúrgica, con los mismos renglones del registro IFSO.</p>
+  <div class="tablewrap summary"><table><tbody id="tbody-resumen"></tbody></table></div>
+</section>
+
+<!-- PERFIL -->
+<section id="sec-perfil" hidden>
+  <form id="form-perfil" class="card" novalidate>
+    <h2>Mis datos</h2>
+    <div class="grid">
+      <div class="field wide"><label for="pf-sede">Hospital / programa de residencia</label><input id="pf-sede" required></div>
+      <div class="field wide"><label for="pf-anio">Año</label>
+        <select id="pf-anio"><option value="">—</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option><option>R5</option><option>Fellow cirugía bariátrica</option><option>Otro</option></select></div>
+    </div>
+    <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
+    <p class="status" id="st-perfil"></p>
+  </form>
+</section>
+</div>
+
+<p class="status" id="st-global" style="text-align:center;padding-top:40px"></p>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const CFG = window.IFSO_CONFIG || {};
+  const setStatus = (el, msg, cls) => { el.textContent = msg || ''; el.className = 'status' + (cls ? ' ' + cls : ''); };
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const hoy = () => new Date().toISOString().slice(0,10);
+  const OTRAS = ['sadis','oatb','biparticion','manga_endo','allurion','balon','otra'];
+  const cntOtra = arr => arr.filter(r => OTRAS.includes(r.proc)).length;
+  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'}, part:{cirujano:'Cirujano',primer_ayudante:'1er ayudante',segundo_ayudante:'2do ayudante'} };
+
+  $('#auth-org').textContent = CFG.ORGANIZACION || '';
+  if (!CFG.SUPABASE_URL) { setStatus($('#st-global'), 'Falta config.js.', 'err'); return; }
+  const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+
+  let user = null, perfil = null, casos = [], pendingDelete = null, tabActual = null;
+
+  function mostrar(v){ ['auth','app'].forEach(x => $('#view-'+x).hidden = x !== v); }
+  function authPanel(p){ ['login','registro','olvide','nueva'].forEach(x => $('#auth-'+x).hidden = x !== p); }
+  document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => authPanel(b.dataset.auth)));
+
+  // ---------- auth ----------
+  $('#form-login').addEventListener('submit', async ev => {
+    ev.preventDefault(); setStatus($('#st-login'), 'Entrando…');
+    const { error } = await sb.auth.signInWithPassword({ email: $('#li-email').value.trim(), password: $('#li-pass').value });
+    if (error) setStatus($('#st-login'), error.message.includes('Invalid') ? 'Correo o contraseña incorrectos.' : error.message.includes('confirm') ? 'Confirma tu correo primero (revisa tu bandeja).' : 'No se pudo entrar: ' + error.message, 'err');
+    else setStatus($('#st-login'), '');
+  });
+  $('#form-registro').addEventListener('submit', async ev => {
+    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    setStatus($('#st-registro'), 'Creando cuenta…');
+    const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value,
+      options: { data: { nombre: $('#re-nombre').value.trim(), rol: 'residente', sede: $('#re-sede').value.trim(), anio_res: $('#re-anio').value } } });
+    if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
+    if (data.session) setStatus($('#st-registro'), '');
+    else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
+  });
+  $('#form-olvide').addEventListener('submit', async ev => {
+    ev.preventDefault(); setStatus($('#st-olvide'), 'Enviando…');
+    const { error } = await sb.auth.resetPasswordForEmail($('#ol-email').value.trim(), { redirectTo: location.href.split('#')[0] });
+    setStatus($('#st-olvide'), error ? 'No se pudo enviar: ' + error.message : 'Si el correo existe, te llegará un enlace para cambiar la contraseña.', error ? 'err' : 'ok');
+  });
+  $('#form-nueva').addEventListener('submit', async ev => {
+    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    const { error } = await sb.auth.updateUser({ password: $('#nu-pass').value });
+    if (error) setStatus($('#st-nueva'), 'No se pudo cambiar: ' + error.message, 'err');
+    else { setStatus($('#st-nueva'), 'Contraseña guardada.', 'ok'); history.replaceState(null, '', location.pathname); await cargarSesion(); }
+  });
+  $('#salir').addEventListener('click', () => sb.auth.signOut());
+  sb.auth.onAuthStateChange((ev, session) => {
+    if (ev === 'PASSWORD_RECOVERY') { mostrar('auth'); authPanel('nueva'); return; }
+    if (ev === 'SIGNED_OUT') { user = perfil = null; mostrar('auth'); authPanel('login'); return; }
+    if (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION' || ev === 'USER_UPDATED') cargarSesion(session);
+  });
+  async function cargarSesion(session){
+    if (!session) { const r = await sb.auth.getSession(); session = r.data.session; }
+    if (!session) { mostrar('auth'); authPanel('login'); return; }
+    if (location.hash.includes('type=recovery')) { mostrar('auth'); authPanel('nueva'); return; }
+    user = session.user;
+    const { data, error } = await sb.from('perfiles').select('*').eq('user_id', user.id).maybeSingle();
+    if (error || !data) { setStatus($('#st-global'), 'No se pudo cargar tu perfil. Recarga la página.', 'err'); return; }
+    perfil = data;
+    if (perfil.rol !== 'residente' && perfil.rol !== 'admin') { location.replace('../app/'); return; }
+    await entrarApp();
+  }
+
+  // ---------- app ----------
+  const TABS = [['captura','Capturar'],['casos','Mis casos'],['resumen','Resumen'],['perfil','Mis datos']];
+  async function entrarApp(){
+    mostrar('app');
+    $('#who-nombre').textContent = perfil.nombre || user.email;
+    $('#who-sede').textContent = [perfil.sede, perfil.anio_res].filter(Boolean).map(x => '· ' + x).join(' ');
+    $('#app-sub').textContent = perfil.rol === 'admin' ? 'Vista de coordinación' : '';
+    $('#tabs').innerHTML = TABS.map(([k,l]) => `<button role="tab" data-tab="${k}" aria-selected="false">${l}</button>`).join('');
+    document.querySelectorAll('#tabs [role=tab]').forEach(b => b.addEventListener('click', () => irA(b.dataset.tab)));
+    $('#pf-sede').value = perfil.sede || ''; $('#pf-anio').value = perfil.anio_res || '';
+    await recargar();
+    let t = null; try { t = localStorage.getItem('ifso.res.tab'); } catch(e){}
+    irA(TABS.some(x => x[0] === t) ? t : 'captura');
+  }
+  function irA(tab){
+    tabActual = tab;
+    document.querySelectorAll('#tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'));
+    ['captura','casos','resumen','perfil'].forEach(s => $('#sec-'+s).hidden = s !== tab);
+    try { localStorage.setItem('ifso.res.tab', tab); } catch(e){}
+    if (tab === 'resumen') renderResumen();
+  }
+  async function recargar(){
+    const { data } = await sb.from('residentes_casos').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(5000);
+    casos = data || [];
+    const centrosPrevios = [...new Set(casos.map(c => c.centro_nombre))].sort();
+    $('#centros-previos').innerHTML = centrosPrevios.map(c => `<option value="${esc(c)}">`).join('');
+    llenarAnios($('#filtro-anio')); llenarAnios($('#resumen-anio'));
+    renderCasos(); if (tabActual === 'resumen') renderResumen();
+  }
+  function anios(){ const s = new Set(casos.map(p => p.fecha.slice(0,4))); s.add(String(new Date().getFullYear())); return [...s].sort().reverse(); }
+  function llenarAnios(sel){ const v = sel.value; sel.innerHTML = '<option value="">Todos los años</option>' + anios().map(a => `<option value="${a}">${a}</option>`).join(''); sel.value = [...sel.options].some(o => o.value === v) ? v : ''; }
+
+  // ---------- captura ----------
+  $('#fecha').value = hoy();
+  $('#form').addEventListener('submit', async ev => {
+    ev.preventDefault(); const f = ev.target;
+    if (!f.checkValidity()) { setStatus($('#st-form'), 'Faltan campos obligatorios.', 'err'); f.reportValidity(); return; }
+    const fd = new FormData(f);
+    const doc = {
+      fecha: fd.get('fecha'), centro_nombre: String(fd.get('centro')).trim(), sector: fd.get('sector'), participacion: fd.get('participacion'),
+      folio: String(fd.get('folio')||'').trim() || null, sexo: fd.get('sexo'), edad: Number(fd.get('edad')), imc: Number(fd.get('imc')),
+      origen: fd.get('origen') || 'nacional', glp1: fd.get('glp1') === 'si',
+      dm2: !!fd.get('dm2'), has: !!fd.get('has'), dislip: !!fd.get('dislip'),
+      tipo: fd.get('tipo'), proc: fd.get('proc'), abordaje: fd.get('abordaje'),
+      estancia: Number(fd.get('estancia')), reop: !!fd.get('reop'), muerte: !!fd.get('muerte'),
+      notas: String(fd.get('notas')||'').trim() || null
+    };
+    $('#guardar').disabled = true; setStatus($('#st-form'), 'Guardando…');
+    const id = $('#caso-id').value;
+    const q = id ? sb.from('residentes_casos').update(doc).eq('id', id) : sb.from('residentes_casos').insert(Object.assign({ user_id: user.id }, doc));
+    const { error } = await q;
+    $('#guardar').disabled = false;
+    if (error) { setStatus($('#st-form'), 'No se guardó: ' + error.message, 'err'); return; }
+    const fecha = doc.fecha, centro = doc.centro_nombre, sector = doc.sector;
+    resetSilencioso = true; f.reset(); $('#fecha').value = fecha; $('#centro').value = centro; (sector === 'publico' ? $('#sector-pub') : $('#sector-priv')).checked = true; $('#ab-lap').checked = true; $('#origen-nac').checked = true;
+    salirEdicion(); setStatus($('#st-form'), id ? 'Cambios guardados.' : 'Caso guardado. Listo para el siguiente.', 'ok');
+    await recargar();
+  });
+  let resetSilencioso = false;
+  $('#form').addEventListener('reset', () => { const s = resetSilencioso; resetSilencioso = false; setTimeout(() => { if (!s) { $('#fecha').value = hoy(); setStatus($('#st-form'), ''); } $('#ab-lap').checked = true; $('#origen-nac').checked = true; }, 0); });
+  function salirEdicion(){ $('#caso-id').value = ''; $('#banner-edit').hidden = true; $('#guardar').textContent = 'Guardar caso'; }
+  $('#cancelar-edit').addEventListener('click', () => { $('#form').reset(); salirEdicion(); });
+  function editar(p){
+    $('#caso-id').value = p.id; $('#banner-edit').hidden = false; $('#guardar').textContent = 'Guardar cambios';
+    $('#fecha').value = p.fecha; $('#centro').value = p.centro_nombre; $('#folio').value = p.folio || '';
+    (p.sector === 'publico' ? $('#sector-pub') : $('#sector-priv')).checked = true;
+    $('#part-' + ({cirujano:'cir',primer_ayudante:'1',segundo_ayudante:'2'})[p.participacion]).checked = true;
+    (p.sexo === 'M' ? $('#sexo-m') : $('#sexo-h')).checked = true; $('#edad').value = p.edad; $('#imc').value = p.imc;
+    (p.origen === 'internacional' ? $('#origen-int') : $('#origen-nac')).checked = true; (p.glp1 ? $('#glp1-si') : $('#glp1-no')).checked = true;
+    $('#dm2').checked = p.dm2; $('#has').checked = p.has; $('#dislip').checked = p.dislip;
+    (p.tipo === 'primaria' ? $('#tipo-p') : $('#tipo-r')).checked = true;
+    $('#proc-' + p.proc).checked = true; $('#ab-' + ({laparoscopica:'lap',robotica:'rob',abierta:'abi',endoscopica:'endo'})[p.abordaje]).checked = true;
+    $('#estancia').value = p.estancia; $('#reop').checked = p.reop; $('#muerte').checked = p.muerte; $('#notas').value = p.notas || '';
+    irA('captura'); window.scrollTo({ top: 0 });
+  }
+
+  // ---------- casos ----------
+  function filtrados(){ const a = $('#filtro-anio').value, pt = $('#filtro-part').value; return casos.filter(p => (!a || p.fecha.startsWith(a)) && (!pt || p.participacion === pt)); }
+  function renderCasos(){
+    const rows = filtrados();
+    const n = k => casos.filter(c => c.participacion === k).length;
+    $('#kpis').innerHTML = [[casos.length,'casos en total'],[n('cirujano'),'como cirujano'],[n('primer_ayudante'),'como 1er ayudante'],[n('segundo_ayudante'),'como 2do ayudante']].map(([v,l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join('');
+    $('#count-casos').textContent = rows.length + ' caso' + (rows.length === 1 ? '' : 's');
+    $('#empty-casos').hidden = rows.length > 0;
+    $('#tbody-casos').innerHTML = rows.map(r => {
+      const com = [r.dm2&&'DM2', r.has&&'HAS', r.dislip&&'Dislip', r.glp1&&'GLP-1'].filter(Boolean).join(', ') || '—';
+      const ev = [r.reop&&'<span class="pill rev">Reop/readm</span>', r.muerte&&'<span class="pill muerte">Muerte</span>'].filter(Boolean).join(' ') || '—';
+      const del = pendingDelete === r.id ? `<button class="rowbtn confirm" data-del="${r.id}" data-confirm="1">Confirmar borrar</button>` : `<button class="rowbtn" data-del="${r.id}">Borrar</button>`;
+      return `<tr class="click" data-edit="${r.id}"><td>${esc(r.fecha)}</td><td>${esc(r.centro_nombre)} <span class="pill">${r.sector==='publico'?'Púb':'Priv'}</span></td><td>${L.part[r.participacion]}</td><td>${esc(r.folio||'—')}</td><td>${r.sexo==='M'?'Mujer':'Hombre'}</td>
+        <td class="num">${r.edad}</td><td class="num">${Number(r.imc).toFixed(1)}</td><td><span class="pill${r.tipo==='revisional'?' rev':''}">${L.tipo[r.tipo]}</span></td>
+        <td>${L.proc[r.proc]}</td><td>${L.abordaje[r.abordaje]}</td><td>${com}</td><td class="num">${r.estancia}</td><td>${ev}</td><td>${del}</td></tr>`;
+    }).join('');
+  }
+  $('#filtro-anio').addEventListener('change', renderCasos); $('#filtro-part').addEventListener('change', renderCasos);
+  $('#tbody-casos').addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-del]');
+    if (b) {
+      if (!b.dataset.confirm) { pendingDelete = b.dataset.del; renderCasos(); setTimeout(() => { if (pendingDelete === b.dataset.del) { pendingDelete = null; renderCasos(); } }, 5000); return; }
+      pendingDelete = null;
+      const { error } = await sb.from('residentes_casos').delete().eq('id', b.dataset.del);
+      if (error) setStatus($('#st-casos'), 'No se pudo borrar: ' + error.message, 'err');
+      await recargar(); return;
+    }
+    const tr = ev.target.closest('[data-edit]'); if (!tr) return;
+    const p = casos.find(x => x.id === tr.dataset.edit); if (p) editar(p);
+  });
+  $('#exportar').addEventListener('click', () => {
+    const rows = filtrados();
+    const base = [['fecha','centro','sector','participacion','folio','sexo','edad','imc','origen','glp1_previo','dm2','has','dislip','tipo','procedimiento','abordaje','estancia_dias','reop_readmision','muerte','notas']]
+      .concat(rows.map(p => [p.fecha, p.centro_nombre, p.sector, L.part[p.participacion], p.folio||'', p.sexo, p.edad, Number(p.imc), p.origen, p.glp1?1:0, p.dm2?1:0, p.has?1:0, p.dislip?1:0, p.tipo, L.proc[p.proc], p.abordaje, p.estancia, p.reop?1:0, p.muerte?1:0, p.notas||'']));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(base), 'Bitácora');
+    const res = resumenRows(rows).filter(r => r[0] !== 'g');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Residente', perfil.nombre || ''],['Sede', perfil.sede || ''],['Año', perfil.anio_res || ''],[]].concat(res)), 'Resumen');
+    XLSX.writeFile(wb, `Bitacora_${(perfil.nombre||'residente').replace(/\s+/g,'_')}.xlsx`);
+    setStatus($('#st-casos'), `Excel generado: ${rows.length} casos.`, 'ok');
+  });
+
+  // ---------- resumen ----------
+  const med = a => { if (!a.length) return null; const s=[...a].map(Number).sort((x,y)=>x-y); const m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+  const mn = a => a.length ? Math.min(...a.map(Number)) : null, mx = a => a.length ? Math.max(...a.map(Number)) : null;
+  const fmt = v => v == null ? '—' : (Number.isInteger(v) ? String(v) : v.toFixed(1));
+  const stat = a => a.length ? `${fmt(med(a))} (${fmt(mn(a))} – ${fmt(mx(a))})` : '—';
+  const pct = (n, d) => d ? `${n} (${(100*n/d).toFixed(1)}%)` : '0';
+  function resumenRows(rs){
+    const M = rs.filter(r=>r.sexo==='M'), H = rs.filter(r=>r.sexo==='H');
+    const prim = rs.filter(r=>r.tipo==='primaria'), rev = rs.filter(r=>r.tipo==='revisional');
+    const cnt = (arr,k,v) => arr.filter(r=>r[k]===v).length;
+    const otras = arr => OTRAS.map(v => [`   · ${L.proc[v]}`, cnt(arr,'proc',v)]);
+    return [
+      ['g','Participación'],['Como cirujano', cnt(rs,'participacion','cirujano')],['Como 1er ayudante', cnt(rs,'participacion','primer_ayudante')],['Como 2do ayudante', cnt(rs,'participacion','segundo_ayudante')],['Hospital público', cnt(rs,'sector','publico')],['Hospital privado', cnt(rs,'sector','privado')],
+      ['g','Pacientes'],['Número de pacientes', rs.length],['Mujeres', pct(M.length, rs.length)],['Edad mujeres · mediana (mín – máx)', stat(M.map(r=>r.edad))],
+      ['Hombres', pct(H.length, rs.length)],['Edad hombres · mediana (mín – máx)', stat(H.map(r=>r.edad))],
+      ['IMC mujeres · mediana (mín – máx)', stat(M.map(r=>r.imc))],['IMC hombres · mediana (mín – máx)', stat(H.map(r=>r.imc))],
+      ['Pacientes internacionales', pct(rs.filter(r=>r.origen==='internacional').length, rs.length)],['Uso previo de agonista GLP-1', pct(rs.filter(r=>r.glp1).length, rs.length)],
+      ['g','Cirugías primarias'],['Primaria manga', cnt(prim,'proc','manga')],['Primaria OAGB', cnt(prim,'proc','oagb')],['Primaria bypass', cnt(prim,'proc','bypass')],['Primaria otra (total)', cntOtra(prim)], ...otras(prim),
+      ['g','Cirugías revisionales'],['Revisional manga', cnt(rev,'proc','manga')],['Revisional OAGB', cnt(rev,'proc','oagb')],['Revisional bypass', cnt(rev,'proc','bypass')],['Revisional otra (total)', cntOtra(rev)], ...otras(rev),
+      ['g','Comorbilidades'],['DM2', pct(rs.filter(r=>r.dm2).length, rs.length)],['HAS', pct(rs.filter(r=>r.has).length, rs.length)],['Dislipidemia', pct(rs.filter(r=>r.dislip).length, rs.length)],
+      ['g','Evolución'],['Estancia hospitalaria (días) · mediana (mín – máx)', stat(rs.map(r=>r.estancia))],['Reoperación / readmisión', pct(rs.filter(r=>r.reop).length, rs.length)],['Muerte', pct(rs.filter(r=>r.muerte).length, rs.length)],
+      ['g','Abordaje'],['Laparoscópico', cnt(rs,'abordaje','laparoscopica')],['Robótico', cnt(rs,'abordaje','robotica')],['Abierto', cnt(rs,'abordaje','abierta')],['Endoscópico', cnt(rs,'abordaje','endoscopica')],
+    ];
+  }
+  function renderResumen(){
+    const anio = $('#resumen-anio').value; const rs = casos.filter(p => !anio || p.fecha.startsWith(anio));
+    $('#count-resumen').textContent = `${rs.length} caso${rs.length===1?'':'s'}${anio ? ' · ' + anio : ''}`;
+    $('#tbody-resumen').innerHTML = resumenRows(rs).map(r => r[0]==='g' ? `<tr class="group"><td colspan="2">${esc(r[1])}</td></tr>` : `<tr><td>${esc(r[0])}</td><td class="num">${esc(r[1])}</td></tr>`).join('');
+  }
+  $('#resumen-anio').addEventListener('change', renderResumen);
+
+  // ---------- perfil ----------
+  $('#form-perfil').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const { error } = await sb.rpc('actualizar_residente', { p_sede: $('#pf-sede').value, p_anio: $('#pf-anio').value });
+    if (error) { setStatus($('#st-perfil'), 'No se pudo guardar: ' + error.message, 'err'); return; }
+    perfil.sede = $('#pf-sede').value.trim(); perfil.anio_res = $('#pf-anio').value;
+    $('#who-sede').textContent = [perfil.sede, perfil.anio_res].filter(Boolean).map(x => '· ' + x).join(' ');
+    setStatus($('#st-perfil'), 'Guardado.', 'ok');
+  });
+
+  mostrar('auth'); authPanel('login');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
