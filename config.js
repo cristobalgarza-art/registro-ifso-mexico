@@ -3,6 +3,6 @@
 window.IFSO_CONFIG = {
   SUPABASE_URL: "https://yqzwvnfzryyvuqfgqwys.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_DyNe5-5Yq3IcoPQIRrfcDQ_WZo3hm_D",
-  NOMBRE_REGISTRO: "Registro IFSO México",
+  NOMBRE_REGISTRO: "Registro Bariátrico México",
   ORGANIZACION: "Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas"
 };
