@@ -15,6 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="../config.js"></script>
+<script src="../graficas.js"></script>
 <link rel="stylesheet" href="../estilos.css">
 </head>
 <body>
@@ -206,6 +207,29 @@
   <p class="status" id="st-resumen"></p>
 </section>
 
+<!-- PANEL -->
+<section id="sec-panel" hidden>
+  <div class="toolbar">
+    <div class="seg" id="ambito-p"><label><input type="radio" name="ambito-p" value="mio" id="ambito-p-mio" checked>Mi centro</label><label><input type="radio" name="ambito-p" value="mx" id="ambito-p-mx">México (todos)</label></div>
+    <select id="panel-centro" hidden><option value="">Todos los centros (México)</option></select>
+    <select id="panel-anio"><option value="">Todos los años</option></select>
+    <select id="panel-mes" hidden><option value="">Todo el año</option></select>
+    <span class="count" id="count-panel"></span>
+  </div>
+  <div class="kpis" id="kpis-panel"></div>
+  <div class="gcards">
+    <div class="card ancha"><h2 id="g-mes-t">Pacientes por mes</h2><div id="g-mes"></div></div>
+    <div class="card"><h2>Procedimientos</h2><div id="g-proc"></div></div>
+    <div class="card"><h2>Perfil del paciente</h2><div id="g-perfil"></div></div>
+    <div class="card"><h2>Primaria vs. revisional</h2><div id="g-tipo"></div></div>
+    <div class="card"><h2>Abordaje</h2><div id="g-abord"></div></div>
+    <div class="card"><h2>Edad (años)</h2><div id="g-edad"></div></div>
+    <div class="card"><h2>IMC preoperatorio (kg/m²)</h2><div id="g-imc"></div></div>
+  </div>
+  <p class="hint" style="margin-top:12px">Las gráficas de México muestran la suma nacional sin cifras de ningún centro en particular. Toca una barra para ver el detalle.</p>
+  <p class="status" id="st-panel"></p>
+</section>
+
 <!-- ADMIN: CENTROS -->
 <section id="sec-centros" hidden>
   <div class="kpis" id="kpis"></div>
@@ -286,7 +310,8 @@
   // Procedimientos que en el formato IFSO cuentan como "otra" (se desglosan en el resumen y en la base de pacientes).
   const OTRAS = ['sadis','oatb','biparticion','manga_endo','allurion','balon','otra'];
   const cntOtra = arr => arr.filter(r => OTRAS.includes(r.proc)).length;
-  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
+  const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'},
+    procLargo:{manga:'Manga gástrica',oagb:'OAGB',bypass:'Bypass en Y de Roux',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'} };
 
   $('#auth-org').textContent = CFG.ORGANIZACION || '';
   if (!CFG.SUPABASE_URL || CFG.SUPABASE_URL.includes('PENDIENTE')) {
@@ -363,8 +388,8 @@
   });
 
   // ---------- app ----------
-  const TABS_CENTRO = [['captura','Capturar'],['registros','Registros'],['resumen','Resumen']];
-  const TABS_ADMIN = [['centros','Centros'],['usuarios','Usuarios'],['captura','Capturar'],['registros','Registros'],['resumen','Resumen'],['exportar','Excel IFSO']];
+  const TABS_CENTRO = [['captura','Capturar'],['registros','Registros'],['panel','Panel'],['resumen','Resumen']];
+  const TABS_ADMIN = [['centros','Centros'],['usuarios','Usuarios'],['captura','Capturar'],['registros','Registros'],['panel','Panel'],['resumen','Resumen'],['exportar','Excel IFSO']];
   async function entrarApp(){
     mostrar('app');
     $('#who-nombre').textContent = perfil.nombre || user.email;
@@ -372,8 +397,8 @@
     const tabs = esAdmin() ? TABS_ADMIN : TABS_CENTRO;
     $('#tabs').innerHTML = tabs.map(([k,l]) => `<button role="tab" data-tab="${k}" aria-selected="false">${l}</button>`).join('');
     document.querySelectorAll('#tabs [role=tab]').forEach(b => b.addEventListener('click', () => irA(b.dataset.tab)));
-    ['fs-centro-admin','filtro-centro','th-centro','resumen-centro'].forEach(id => $('#'+id).hidden = !esAdmin());
-    $('#ambito').hidden = esAdmin();
+    ['fs-centro-admin','filtro-centro','th-centro','resumen-centro','panel-centro'].forEach(id => $('#'+id).hidden = !esAdmin());
+    $('#ambito').hidden = esAdmin(); $('#ambito-p').hidden = esAdmin();
     await recargar();
     $('#who-centro').textContent = esAdmin() ? '' : '· ' + centroNombre(perfil.centro_id);
     let t = null; try { t = localStorage.getItem('ifso.tab'); } catch(e){}
@@ -382,9 +407,10 @@
   function irA(tab){
     tabActual = tab;
     document.querySelectorAll('#tabs [role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false'));
-    ['captura','registros','resumen','centros','usuarios','exportar'].forEach(s => $('#sec-'+s).hidden = s !== tab);
+    ['captura','registros','panel','resumen','centros','usuarios','exportar'].forEach(s => $('#sec-'+s).hidden = s !== tab);
     try { localStorage.setItem('ifso.tab', tab); } catch(e){}
     if (tab === 'resumen') renderResumen();
+    if (tab === 'panel') renderPanel();
     if (tab === 'exportar') llenarAnios($('#ex-anio'), false);
   }
   async function recargar(){
@@ -404,9 +430,11 @@
     const keep = (sel, html, first) => { const v = sel.value; sel.innerHTML = first + html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
     keep($('#filtro-centro'), opts, '<option value="">Todos los centros</option>');
     keep($('#resumen-centro'), opts, '<option value="">Todos los centros (México)</option>');
+    keep($('#panel-centro'), opts, '<option value="">Todos los centros (México)</option>');
     keep($('#centro-admin'), opts, '');
-    llenarAnios($('#filtro-anio'), true); llenarAnios($('#resumen-anio'), true);
-    renderRegistros(); if (tabActual === 'resumen') renderResumen();
+    llenarAnios($('#filtro-anio'), true); llenarAnios($('#resumen-anio'), true); llenarAnios($('#panel-anio'), true);
+    panelCache = { key: null, rows: [] };
+    renderRegistros(); if (tabActual === 'resumen') renderResumen(); if (tabActual === 'panel') renderPanel();
     if (esAdmin()) { renderCentros(); renderUsuarios(); }
   }
   function anios(){ const s = new Set(pacientes.map(p => p.fecha.slice(0,4))); s.add(String(new Date().getFullYear())); return [...s].sort().reverse(); }
@@ -522,6 +550,35 @@
       ['Revisional abierta', cnt(rev,'abordaje','abierta')],['Revisional laparoscópica', cnt(rev,'abordaje','laparoscopica')],['Revisional robótica', cnt(rev,'abordaje','robotica')],['Revisional endoscópica', cnt(rev,'abordaje','endoscopica')],
     ];
   }
+  // ---------- panel de gráficas ----------
+  let panelCache = { key: null, rows: [] };
+  $('#panel-mes').innerHTML += Graficas.MESES.map((m, i) => `<option value="${i+1}">${m}</option>`).join('');
+  async function renderPanel(){
+    const anio = $('#panel-anio').value, mes = anio ? Number($('#panel-mes').value || 0) : 0;
+    $('#panel-mes').hidden = !anio;
+    const mx = !esAdmin() && $('#ambito-p-mx').checked;
+    let rows, label;
+    if (mx) {
+      const key = 'mx' + anio;
+      if (panelCache.key !== key) {
+        setStatus($('#st-panel'), 'Cargando datos de México…');
+        const { data, error } = await sb.rpc('pacientes_anonimos', { p_anio: anio ? Number(anio) : null });
+        if (error) { setStatus($('#st-panel'), 'No se pudo obtener la información nacional.', 'err'); return; }
+        panelCache = { key, rows: data || [] }; setStatus($('#st-panel'), '');
+      }
+      rows = panelCache.rows; label = 'México';
+    } else {
+      const c = esAdmin() ? $('#panel-centro').value : perfil.centro_id;
+      rows = pacientes.filter(p => (!c || p.centro_id === c) && (!anio || p.fecha.startsWith(anio))).map(p => ({ ...p, anio: Number(p.fecha.slice(0,4)), mes: Number(p.fecha.slice(5,7)) }));
+      label = c ? centroNombre(c) : 'México';
+    }
+    const rs = Graficas.pintarPanel({ rows, anio, mes, etiquetas: { proc: L.procLargo, abordaje: L.abordaje } });
+    $('#count-panel').textContent = `${rs.length} paciente${rs.length===1?'':'s'} · ${label}${anio ? ' ' + (mes ? Graficas.MESES[mes-1] + ' ' : '') + anio : ''}`;
+  }
+  document.querySelectorAll('#ambito-p input').forEach(i => i.addEventListener('change', renderPanel));
+  ['panel-centro','panel-anio','panel-mes'].forEach(id => $('#'+id).addEventListener('change', renderPanel));
+  let panelResize = null; addEventListener('resize', () => { if (tabActual === 'panel') { clearTimeout(panelResize); panelResize = setTimeout(renderPanel, 150); } });
+
   let ultimoResumen = { rows: [], label: '' };
   async function renderResumen(){
     const anio = $('#resumen-anio').value;
