@@ -48,7 +48,7 @@
       <form id="form-registro" novalidate>
         <div class="grid">
           <div class="field wide"><label for="re-nombre">Nombre completo</label><input id="re-nombre" required placeholder="Dr. Nombre Apellido"></div>
-          <div class="field wide"><label for="re-sede">Hospital / programa de residencia</label><input id="re-sede" required placeholder="Hospital General de…"></div>
+          <div class="field wide"><label for="re-sede">Sede de residencia / fellowship</label><select id="re-sede" required><option value="">Elige tu sede…</option></select><p class="hint" style="margin:4px 0 0">Si tu hospital no aparece, pídele al coordinador del registro que lo agregue.</p></div>
           <div class="field wide"><label for="re-anio">Año</label>
             <select id="re-anio" required><option value="">Elige…</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option><option>R5</option><option>Fellow cirugía bariátrica</option><option>Otro</option></select></div>
           <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
@@ -96,9 +96,9 @@
     <div class="banner" id="banner-edit" hidden>Editando un caso ya guardado. <button class="btn link" type="button" id="cancelar-edit">Cancelar edición</button></div>
     <fieldset>
       <legend>Cirugía y participación</legend>
-      <div class="grid">
+      <div class="grid g3">
         <div class="field"><label for="fecha">Fecha de cirugía</label><input id="fecha" name="fecha" type="date" required></div>
-        <div class="field"><label for="centro">Centro / hospital</label><input id="centro" name="centro" list="centros-previos" required maxlength="80"><datalist id="centros-previos"></datalist></div>
+        <div class="field"><label for="centro">Sede / hospital</label><select id="centro" name="centro" required><option value="">Elige…</option></select></div>
         <div class="field"><label>Hospital</label>
           <div class="seg"><label><input type="radio" name="sector" value="publico" id="sector-pub" required>Público</label><label><input type="radio" name="sector" value="privado" id="sector-priv">Privado</label></div></div>
         <div class="field wide"><label>Mi participación</label>
@@ -107,7 +107,7 @@
     </fieldset>
     <fieldset>
       <legend>Paciente</legend>
-      <div class="grid">
+      <div class="grid g3">
         <div class="field"><label for="folio">Folio / iniciales</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
         <div class="field"><label>Sexo</label>
           <div class="seg"><label><input type="radio" name="sexo" value="M" id="sexo-m" required>Mujer</label><label><input type="radio" name="sexo" value="H" id="sexo-h">Hombre</label></div></div>
@@ -223,7 +223,7 @@
   <form id="form-perfil" class="card" novalidate>
     <h2>Mis datos</h2>
     <div class="grid">
-      <div class="field wide"><label for="pf-sede">Hospital / programa de residencia</label><input id="pf-sede" required></div>
+      <div class="field wide"><label for="pf-sede">Sede de residencia / fellowship</label><select id="pf-sede" required><option value="">Elige tu sede…</option></select></div>
       <div class="field wide"><label for="pf-anio">Año</label>
         <select id="pf-anio"><option value="">—</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option><option>R5</option><option>Fellow cirugía bariátrica</option><option>Otro</option></select></div>
     </div>
@@ -251,8 +251,22 @@
   $('#auth-org').textContent = CFG.ORGANIZACION || '';
   if (!CFG.SUPABASE_URL) { setStatus($('#st-global'), 'Falta config.js.', 'err'); return; }
   const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  // sedes de residencia (lista que administra el coordinador); se lee sin sesión para el alta
+  let sedes = [];
+  function llenarSedes(sel, actual, primera){
+    const v = actual != null ? actual : sel.value;
+    const opts = sedes.map(s => `<option value="${esc(s.nombre)}">${esc(s.nombre)}</option>`).join('');
+    const extra = v && !sedes.some(s => s.nombre === v) ? `<option value="${esc(v)}">${esc(v)}</option>` : '';
+    sel.innerHTML = `<option value="">${primera}</option>` + opts + extra; sel.value = v || '';
+  }
+  async function cargarSedes(){
+    const { data } = await sb.from('sedes').select('*').eq('activo', true).order('nombre');
+    sedes = data || [];
+    llenarSedes($('#re-sede'), null, 'Elige tu sede…'); llenarSedes($('#centro'), null, 'Elige…'); llenarSedes($('#pf-sede'), perfil ? perfil.sede : null, 'Elige tu sede…');
+  }
 
   let recuperando = /type=recovery/.test(location.hash + location.search);
+  cargarSedes();
   let user = null, perfil = null, casos = [], pendingDelete = null, tabActual = null;
 
   function mostrar(v){ ['auth','app'].forEach(x => $('#view-'+x).hidden = x !== v); }
@@ -315,7 +329,7 @@
     $('#app-sub').textContent = perfil.rol === 'admin' ? 'Vista de coordinación' : '';
     $('#tabs').innerHTML = TABS.map(([k,l]) => `<button role="tab" data-tab="${k}" aria-selected="false">${l}</button>`).join('');
     document.querySelectorAll('#tabs [role=tab]').forEach(b => b.addEventListener('click', () => irA(b.dataset.tab)));
-    $('#pf-sede').value = perfil.sede || ''; $('#pf-anio').value = perfil.anio_res || '';
+    llenarSedes($('#pf-sede'), perfil.sede || '', 'Elige tu sede…'); $('#pf-anio').value = perfil.anio_res || '';
     await recargar();
     let t = null; try { t = localStorage.getItem('ifso.res.tab'); } catch(e){}
     irA(TABS.some(x => x[0] === t) ? t : 'captura');
@@ -331,8 +345,7 @@
   async function recargar(){
     const { data } = await sb.from('residentes_casos').select('*').eq('user_id', user.id).order('fecha', { ascending: false }).limit(5000);
     casos = data || [];
-    const centrosPrevios = [...new Set(casos.map(c => c.centro_nombre))].sort();
-    $('#centros-previos').innerHTML = centrosPrevios.map(c => `<option value="${esc(c)}">`).join('');
+    await cargarSedes();
     llenarAnios($('#filtro-anio')); llenarAnios($('#resumen-anio')); llenarAnios($('#panel-anio'));
     renderCasos(); if (tabActual === 'resumen') renderResumen(); if (tabActual === 'panel') renderPanel();
   }
@@ -371,7 +384,7 @@
   $('#cancelar-edit').addEventListener('click', () => { $('#form').reset(); salirEdicion(); });
   function editar(p){
     $('#caso-id').value = p.id; $('#banner-edit').hidden = false; $('#guardar').textContent = 'Guardar cambios';
-    $('#fecha').value = p.fecha; $('#centro').value = p.centro_nombre; $('#folio').value = p.folio || '';
+    $('#fecha').value = p.fecha; llenarSedes($('#centro'), p.centro_nombre, 'Elige…'); $('#folio').value = p.folio || '';
     (p.sector === 'publico' ? $('#sector-pub') : $('#sector-priv')).checked = true;
     $('#part-' + ({cirujano:'cir',primer_ayudante:'1',segundo_ayudante:'2'})[p.participacion]).checked = true;
     (p.sexo === 'M' ? $('#sexo-m') : $('#sexo-h')).checked = true; $('#edad').value = p.edad; $('#imc').value = p.imc;
