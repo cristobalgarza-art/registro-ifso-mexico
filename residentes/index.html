@@ -252,6 +252,7 @@
   if (!CFG.SUPABASE_URL) { setStatus($('#st-global'), 'Falta config.js.', 'err'); return; }
   const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 
+  let recuperando = /type=recovery/.test(location.hash + location.search);
   let user = null, perfil = null, casos = [], pendingDelete = null, tabActual = null;
 
   function mostrar(v){ ['auth','app'].forEach(x => $('#view-'+x).hidden = x !== v); }
@@ -285,18 +286,18 @@
     ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
     const { error } = await sb.auth.updateUser({ password: $('#nu-pass').value });
     if (error) setStatus($('#st-nueva'), 'No se pudo cambiar: ' + error.message, 'err');
-    else { setStatus($('#st-nueva'), 'Contraseña guardada.', 'ok'); history.replaceState(null, '', location.pathname); await cargarSesion(); }
+    else { setStatus($('#st-nueva'), 'Contraseña guardada.', 'ok'); recuperando = false; history.replaceState(null, '', location.pathname); await cargarSesion(); }
   });
   $('#salir').addEventListener('click', () => sb.auth.signOut());
   sb.auth.onAuthStateChange((ev, session) => {
-    if (ev === 'PASSWORD_RECOVERY') { mostrar('auth'); authPanel('nueva'); return; }
+    if (ev === 'PASSWORD_RECOVERY') { recuperando = true; mostrar('auth'); authPanel('nueva'); return; }
     if (ev === 'SIGNED_OUT') { user = perfil = null; mostrar('auth'); authPanel('login'); return; }
     if (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION' || ev === 'USER_UPDATED') cargarSesion(session);
   });
   async function cargarSesion(session){
     if (!session) { const r = await sb.auth.getSession(); session = r.data.session; }
     if (!session) { mostrar('auth'); authPanel('login'); return; }
-    if (location.hash.includes('type=recovery')) { mostrar('auth'); authPanel('nueva'); return; }
+    if (recuperando || /type=recovery/.test(location.hash + location.search)) { recuperando = true; mostrar('auth'); authPanel('nueva'); return; }
     user = session.user;
     const { data, error } = await sb.from('perfiles').select('*').eq('user_id', user.id).maybeSingle();
     if (error || !data) { setStatus($('#st-global'), 'No se pudo cargar tu perfil. Recarga la página.', 'err'); return; }
