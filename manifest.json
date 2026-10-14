@@ -1,7 +1,8 @@
 {
   "name": "Registro IFSO México",
   "short_name": "IFSO MX",
-  "start_url": "./",
+  "start_url": "./app/",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f3f6f8",
   "theme_color": "#0b4f7a",
