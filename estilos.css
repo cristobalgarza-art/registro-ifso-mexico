@@ -1,5 +1,5 @@
 :root{
-  --bg:#f4f5fa; --surface:#ffffff; --fg:#1a1d33; --muted:#5d6382; --line:#d9dcea;
+  --bg:#f4f5fa; --surface:#ffffff; --fg:#1a1d33; --muted:#4a5070; --line:#d9dcea;
   --navy:#061551; --violet:#844dff;
   --accent:#061551; --accent-fg:#ffffff; --accent-soft:#ece6ff; --primary:#844dff; --primary-hover:#6f3ae6;
   --ok:#1f7a4d; --danger:#b3261e; --danger-soft:#fbe9e7; --warn-soft:#fff4e0;
@@ -18,7 +18,7 @@ header{position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px so
 .brand h1{color:var(--navy)} @media (prefers-color-scheme: dark){ .brand h1{color:var(--fg)} }
 .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font-size:1.15rem;margin:0;font-weight:700;letter-spacing:-.01em}
-h2{font-size:1.05rem;margin:0 0 12px;font-weight:600}
+h2{font-size:1.05rem;margin:0 0 12px;font-weight:700}
 .brand small{display:block;color:var(--muted);font-size:.8rem;font-weight:400}
 .who{font-size:.85rem;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .who b{color:var(--fg);font-weight:500}
