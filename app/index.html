@@ -221,7 +221,7 @@
       <p class="status" id="st-centro"></p>
     </form>
   </div>
-  <p class="hint" style="margin:14px 0 8px">Cada centro recibe un código. El cirujano crea su cuenta en esta misma página y escribe el código una sola vez. "Copiar invitación" arma el mensaje listo para WhatsApp o correo. Un centro <b>inactivo</b> conserva sus datos pero ya no acepta nuevos usuarios con su código. <b>Fusionar</b> pasa todos los pacientes y usuarios de un centro a otro y elimina el primero.</p>
+  <p class="hint" style="margin:14px 0 8px">La forma recomendada de dar acceso es invitar por correo en la pestaña <b>Usuarios</b>. El código del centro es la alternativa cuando el registro está abierto. Un centro <b>inactivo</b> conserva sus datos pero ya no acepta nuevos usuarios con su código. <b>Fusionar</b> pasa todos los pacientes y usuarios de un centro a otro y elimina el primero.</p>
   <p class="status" id="st-centros-acciones"></p>
   <div class="tablewrap">
     <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Código</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th>Acciones</th></tr></thead><tbody id="tbody-centros"></tbody></table>
@@ -231,9 +231,29 @@
 
 <!-- ADMIN: USUARIOS -->
 <section id="sec-usuarios" hidden>
-  <p class="hint" style="margin:0 0 10px">Aquí puedes cambiar el centro de un usuario o hacerlo coordinador (administrador). Un usuario sin centro no puede capturar.</p>
+  <div class="card">
+    <h2>Invitar</h2>
+    <p class="hint" style="margin:0 0 12px">Solo puede crear cuenta un correo que esté en esta lista. Al registrarse con ese correo, la persona entra directo a su centro (o a la bitácora de residentes) sin necesidad de código.</p>
+    <form id="form-invitar" novalidate>
+      <div class="grid">
+        <div class="field"><label for="in-email">Correo</label><input id="in-email" type="email" required placeholder="cirujano@correo.com"></div>
+        <div class="field"><label for="in-rol">Rol</label><select id="in-rol"><option value="centro">Cirujano de centro</option><option value="residente">Residente</option><option value="admin">Coordinador</option></select></div>
+        <div class="field"><label for="in-centro">Centro</label><select id="in-centro"><option value="">— sin centro —</option></select></div>
+        <div class="field"><label for="in-nota">Nombre / nota (opcional)</label><input id="in-nota" maxlength="80"></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="submit">Agregar a la lista</button><label class="hint" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="registro-cerrado" style="width:auto;min-height:0"> Registro cerrado (solo invitados)</label></div>
+      <p class="status" id="st-invitar"></p>
+    </form>
+  </div>
+  <h2 style="margin:18px 0 8px">Invitaciones</h2>
   <div class="tablewrap">
-    <table><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Centro</th><th>Alta</th></tr></thead><tbody id="tbody-usuarios"></tbody></table>
+    <table><thead><tr><th>Correo</th><th>Rol</th><th>Centro</th><th>Nota</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbody-invitaciones"></tbody></table>
+    <div class="empty" id="empty-invitaciones">Aún no has invitado a nadie.</div>
+  </div>
+  <h2 style="margin:18px 0 8px">Usuarios con cuenta</h2>
+  <p class="hint" style="margin:0 0 10px">Aquí puedes cambiar el centro de un usuario, hacerlo coordinador o borrar su cuenta. Un usuario sin centro no puede capturar.</p>
+  <div class="tablewrap">
+    <table><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Centro</th><th>Alta</th><th></th></tr></thead><tbody id="tbody-usuarios"></tbody></table>
   </div>
   <p class="status" id="st-usuarios"></p>
 </section>
@@ -275,7 +295,7 @@
   const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 
   // ---------- estado ----------
-  let user = null, perfil = null, centros = [], pacientes = [], perfiles = [], pendingDelete = null, tabActual = null;
+  let user = null, perfil = null, centros = [], pacientes = [], perfiles = [], invitaciones = [], registroCerrado = true, pendingDelete = null, tabActual = null;
   const esAdmin = () => perfil && perfil.rol === 'admin';
   const centroNombre = id => (centros.find(c => c.id === id) || {}).nombre || '—';
 
@@ -295,8 +315,10 @@
     ev.preventDefault();
     const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
     setStatus($('#st-registro'), 'Creando cuenta…');
+    const inv = await sb.rpc('correo_invitado', { p_email: $('#re-email').value.trim() });
+    if (!inv.error && inv.data === false) { setStatus($('#st-registro'), 'Este correo no tiene invitación. Pide al coordinador del registro que te invite con este mismo correo.', 'err'); return; }
     const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value, options: { data: { nombre: $('#re-nombre').value.trim() } } });
-    if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
+    if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : error.message.includes('Database') ? 'Este correo no tiene invitación. Pide al coordinador que te invite.' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
     if (data.session) setStatus($('#st-registro'), '');
     else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
   });
@@ -371,7 +393,10 @@
       sb.from('pacientes').select('*').order('fecha', { ascending: false }).limit(10000)
     ]);
     centros = c.data || []; pacientes = p.data || [];
-    if (esAdmin()) { const u = await sb.from('perfiles').select('*').order('creado'); perfiles = u.data || []; }
+    if (esAdmin()) {
+      const [u, i, a] = await Promise.all([sb.from('perfiles').select('*').order('creado'), sb.from('invitaciones').select('*').order('creado', { ascending: false }), sb.from('ajustes').select('*').eq('clave', 'registro_cerrado').maybeSingle()]);
+      perfiles = u.data || []; invitaciones = i.data || []; registroCerrado = !a.data || a.data.valor === 'true';
+    }
     renderTodo();
   }
   function renderTodo(){
@@ -595,18 +620,67 @@
   // ---------- admin: usuarios ----------
   function renderUsuarios(){
     const opts = '<option value="">— sin centro —</option>' + centros.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
-    $('#tbody-usuarios').innerHTML = perfiles.map(p => `<tr>
-      <td>${esc(p.nombre||'—')}</td><td>${esc(p.email||'')}</td>
+    $('#tbody-usuarios').innerHTML = perfiles.map(p => {
+      const del = p.user_id === user.id ? '' : (pendingDelUser === p.user_id ? `<button class="rowbtn confirm" data-deluser="${p.user_id}" data-confirm="1">Confirmar borrar cuenta</button>` : `<button class="rowbtn" data-deluser="${p.user_id}">Borrar cuenta</button>`);
+      return `<tr>
+      <td>${esc(p.nombre||'—')}${p.rol==='residente' && p.sede ? `<br><span class="hint">${esc(p.sede)}${p.anio_res ? ' · ' + esc(p.anio_res) : ''}</span>` : ''}</td><td>${esc(p.email||'')}</td>
       <td><select data-rol="${p.user_id}" ${p.user_id===user.id?'disabled':''}><option value="centro" ${p.rol==='centro'?'selected':''}>Centro</option><option value="admin" ${p.rol==='admin'?'selected':''}>Coordinador</option><option value="residente" ${p.rol==='residente'?'selected':''}>Residente</option></select></td>
-      <td><select data-centro="${p.user_id}">${opts}</select></td><td>${esc((p.creado||'').slice(0,10))}</td></tr>`).join('');
+      <td><select data-centro="${p.user_id}">${opts}</select></td><td>${esc((p.creado||'').slice(0,10))}</td><td>${del}</td></tr>`; }).join('');
     perfiles.forEach(p => { const s = $(`[data-centro="${p.user_id}"]`); if (s) s.value = p.centro_id || ''; });
+    // invitaciones
+    const keep = (sel, html, first) => { const v = sel.value; sel.innerHTML = first + html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
+    keep($('#in-centro'), centros.filter(c => c.activo !== false).map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join(''), '<option value="">— sin centro —</option>');
+    $('#registro-cerrado').checked = registroCerrado;
+    $('#empty-invitaciones').hidden = invitaciones.length > 0;
+    const ROL = { centro: 'Cirujano', residente: 'Residente', admin: 'Coordinador' };
+    $('#tbody-invitaciones').innerHTML = invitaciones.map(i => `<tr>
+      <td>${esc(i.email)}</td><td>${ROL[i.rol] || i.rol}</td><td>${i.centro_id ? esc(centroNombre(i.centro_id)) : '—'}</td><td>${esc(i.nota||'')}</td>
+      <td>${i.usado ? '<span class="pill">Registrado ' + esc(i.usado.slice(0,10)) + '</span>' : '<span class="pill rev">Pendiente</span>'}</td>
+      <td style="white-space:normal"><button class="rowbtn" data-copyinv="${esc(i.email)}">Copiar mensaje</button> ${i.usado ? '' : `<button class="rowbtn" data-delinv="${esc(i.email)}">Quitar</button>`}</td></tr>`).join('');
   }
+  let pendingDelUser = null;
   $('#tbody-usuarios').addEventListener('change', async ev => {
     const s = ev.target; const uid = s.dataset.rol || s.dataset.centro; if (!uid) return;
     const p = perfiles.find(x => x.user_id === uid);
     const rol = s.dataset.rol ? s.value : p.rol, centro = s.dataset.centro ? (s.value || null) : p.centro_id;
     const { error } = await sb.rpc('admin_actualizar_perfil', { p_user: uid, p_rol: rol, p_centro: centro });
     setStatus($('#st-usuarios'), error ? 'No se pudo guardar: ' + error.message : 'Guardado.', error ? 'err' : 'ok');
+    await recargar();
+  });
+  $('#tbody-usuarios').addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-deluser]'); if (!b) return;
+    if (!b.dataset.confirm) { pendingDelUser = b.dataset.deluser; renderUsuarios(); setTimeout(() => { if (pendingDelUser === b.dataset.deluser) { pendingDelUser = null; renderUsuarios(); } }, 5000); return; }
+    pendingDelUser = null;
+    const { error } = await sb.rpc('admin_borrar_usuario', { p_user: b.dataset.deluser });
+    setStatus($('#st-usuarios'), error ? 'No se pudo borrar: ' + error.message : 'Cuenta borrada. Sus pacientes se conservan en el centro.', error ? 'err' : 'ok');
+    await recargar();
+  });
+  $('#form-invitar').addEventListener('submit', async ev => {
+    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    const rol = $('#in-rol').value;
+    const { error } = await sb.from('invitaciones').upsert({ email: $('#in-email').value.trim().toLowerCase(), rol, centro_id: rol === 'residente' ? null : ($('#in-centro').value || null), nota: $('#in-nota').value.trim() || null, invitado_por: user.id });
+    if (error) { setStatus($('#st-invitar'), 'No se pudo agregar: ' + error.message, 'err'); return; }
+    $('#in-email').value = ''; $('#in-nota').value = ''; setStatus($('#st-invitar'), 'Agregado. Usa "Copiar mensaje" para mandarle la invitación.', 'ok');
+    await recargar();
+  });
+  $('#registro-cerrado').addEventListener('change', async ev => {
+    const { error } = await sb.from('ajustes').upsert({ clave: 'registro_cerrado', valor: ev.target.checked ? 'true' : 'false' });
+    setStatus($('#st-invitar'), error ? 'No se pudo cambiar: ' + error.message : (ev.target.checked ? 'Registro cerrado: solo correos invitados pueden crear cuenta.' : 'Registro abierto: cualquiera puede crear cuenta (necesitará código de centro).'), error ? 'err' : 'ok');
+    await recargar();
+  });
+  $('#tbody-invitaciones').addEventListener('click', async ev => {
+    const c = ev.target.closest('[data-copyinv]');
+    if (c) {
+      const i = invitaciones.find(x => x.email === c.dataset.copyinv); const base = location.href.split('#')[0].replace(/app\/?$/, '');
+      const msg = i.rol === 'residente'
+        ? `Bitácora de Residentes – Registro Bariátrico México\n\n1. Abre ${base}residentes/\n2. Toca "Soy residente, crear mi cuenta" usando este correo: ${i.email}\n3. Captura cada cirugía en la que participes.\n\nTu bitácora es personal y puedes descargarla en Excel cuando la necesites.`
+        : `Registro Bariátrico México – ${i.centro_id ? centroNombre(i.centro_id) : 'Coordinación'}\n\n1. Abre ${base}app/\n2. Toca "Crear cuenta nueva" usando este correo: ${i.email}\n3. Entras directo a tu centro. Captura cada paciente operado; toma menos de un minuto.`;
+      try { await navigator.clipboard.writeText(msg); c.textContent = 'Copiado'; setTimeout(() => c.textContent = 'Copiar mensaje', 2000); } catch(e) { setStatus($('#st-invitar'), 'No se pudo copiar.', 'err'); }
+      return;
+    }
+    const d = ev.target.closest('[data-delinv]'); if (!d) return;
+    const { error } = await sb.from('invitaciones').delete().eq('email', d.dataset.delinv);
+    setStatus($('#st-invitar'), error ? 'No se pudo quitar: ' + error.message : 'Invitación quitada.', error ? 'err' : 'ok');
     await recargar();
   });
 
