@@ -25,6 +25,7 @@
 <div id="view-auth" class="auth" hidden>
   <h1>Bitácora de Residentes</h1>
   <p class="org" id="auth-org"></p>
+  <p class="hint" style="margin:-12px 0 16px"><a href="../" style="color:inherit">Inicio</a> · <a href="../privacidad.html" style="color:inherit">Aviso de privacidad</a></p>
   <div class="card">
     <div id="auth-login">
       <h2>Entrar</h2>
@@ -54,6 +55,7 @@
           <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
           <div class="field wide"><label for="re-pass">Contraseña (mínimo 8 caracteres)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
         </div>
+        <label class="acepto"><input type="checkbox" id="re-acepto" required><span>He leído y acepto el <a href="../privacidad.html" target="_blank" rel="noopener">aviso de privacidad y los términos de uso</a> del Registro.</span></label>
         <div class="actions"><button class="btn primary" type="submit">Crear cuenta</button><button class="btn link" type="button" data-auth="login">Ya tengo cuenta</button></div>
         <p class="status" id="st-registro"></p>
       </form>
@@ -282,11 +284,12 @@
   });
   $('#form-registro').addEventListener('submit', async ev => {
     ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    if (!$('#re-acepto').checked) { setStatus($('#st-registro'), 'Para crear la cuenta debes aceptar el aviso de privacidad y los términos de uso.', 'err'); return; }
     setStatus($('#st-registro'), 'Creando cuenta…');
     const inv = await sb.rpc('correo_invitado', { p_email: $('#re-email').value.trim() });
     if (!inv.error && inv.data === false) { setStatus($('#st-registro'), 'Este correo no tiene invitación. Pide al coordinador del registro que te invite con este mismo correo.', 'err'); return; }
     const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value,
-      options: { data: { nombre: $('#re-nombre').value.trim(), rol: 'residente', sede: $('#re-sede').value.trim(), anio_res: $('#re-anio').value } } });
+      options: { data: { nombre: $('#re-nombre').value.trim(), rol: 'residente', sede: $('#re-sede').value.trim(), anio_res: $('#re-anio').value, acepto_terminos: new Date().toISOString() } } });
     if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : error.message.includes('Database') ? 'Este correo no tiene invitación. Pide al coordinador que te invite.' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
     if (data.session) setStatus($('#st-registro'), '');
     else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
