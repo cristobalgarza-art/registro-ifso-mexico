@@ -20,10 +20,13 @@
 .hero p{color:var(--muted);max-width:560px;margin:0 auto 24px;font-size:1.05rem}
 .hero .actions{justify-content:center}
 .btn.big{font-size:1.05rem;padding:14px 24px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0}
-.card h3{margin:0 0 6px;font-size:1.05rem}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:18px 0;align-items:stretch}
+.cards .card{margin-top:0;display:flex;flex-direction:column}
+.card h3{margin:0 0 6px;font-size:1.05rem;min-height:2.6em}
 .card p{margin:0;color:var(--muted);font-size:.95rem}
+.cards .card p{flex:1}
 .card .actions{margin-top:14px}
+.card .actions .btn{width:100%;text-align:center}
 .steps{counter-reset:s;display:grid;gap:10px;margin:0;padding:0;list-style:none}
 .steps li{display:flex;gap:12px;align-items:flex-start}
 .steps li::before{counter-increment:s;content:counter(s);flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-weight:600;font-size:.9rem}
@@ -60,11 +63,11 @@ footer{color:var(--muted);font-size:.85rem;text-align:center;padding:32px 0 8px}
     <div class="card">
       <h3>Residentes de cirugía bariátrica y metabólica</h3>
       <p>Bitácora quirúrgica personal: centro, hospital público o privado, tu participación (cirujano, 1er o 2do ayudante) y los mismos datos del registro IFSO. Descargable en Excel.</p>
-      <div class="actions"><a class="btn" href="residentes/">Abrir bitácora de residentes</a></div>
+      <div class="actions"><a class="btn" href="residentes/">Abrir bitácora</a></div>
     </div>
     <div class="card">
       <h3>Coordinación del Colegio</h3>
-      <p>Alta de centros con código de invitación, gestión de usuarios y descarga del Excel con el formato IFSO: una columna por centro y el total de México.</p>
+      <p>Alta de centros, invitaciones por correo, gestión de usuarios y descarga del Excel con el formato IFSO: una columna por centro y el total de México.</p>
       <div class="actions"><a class="btn" href="app/">Entrar como coordinador</a></div>
     </div>
   </div>
@@ -72,8 +75,8 @@ footer{color:var(--muted);font-size:.85rem;text-align:center;padding:32px 0 8px}
   <div class="card">
     <h3>Cómo empezar</h3>
     <ol class="steps" style="margin-top:12px">
-      <li><span>Pide a tu coordinador el <b>código de tu centro</b> (seis caracteres).</span></li>
-      <li><span>Entra al registro, toca <b>“Crear cuenta nueva”</b> y escribe el código una sola vez.</span></li>
+      <li><span>El coordinador del registro te <b>invita con tu correo</b>; recibes un mensaje con la liga.</span></li>
+      <li><span>Entra al registro, toca <b>“Crear cuenta nueva”</b> con ese mismo correo y entras directo a tu centro.</span></li>
       <li><span>Captura cada paciente operado. Toma menos de un minuto y no se guardan nombres.</span></li>
     </ol>
   </div>
