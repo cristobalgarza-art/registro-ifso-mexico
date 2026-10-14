@@ -71,7 +71,7 @@
     <div id="auth-nueva" hidden>
       <h2>Nueva contraseña</h2>
       <form id="form-nueva" novalidate>
-        <div class="field"><label for="nu-pass">Contraseña nueva (mínimo 8 caracteres)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label for="nu-pass">Contraseña nueva (mín. 8)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
         <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
         <p class="status" id="st-nueva"></p>
       </form>
@@ -98,7 +98,7 @@
       <legend>Cirugía y participación</legend>
       <div class="grid">
         <div class="field"><label for="fecha">Fecha de cirugía</label><input id="fecha" name="fecha" type="date" required></div>
-        <div class="field"><label for="centro">Centro / hospital donde se operó</label><input id="centro" name="centro" list="centros-previos" required maxlength="80"><datalist id="centros-previos"></datalist></div>
+        <div class="field"><label for="centro">Centro / hospital</label><input id="centro" name="centro" list="centros-previos" required maxlength="80"><datalist id="centros-previos"></datalist></div>
         <div class="field"><label>Hospital</label>
           <div class="seg"><label><input type="radio" name="sector" value="publico" id="sector-pub" required>Público</label><label><input type="radio" name="sector" value="privado" id="sector-priv">Privado</label></div></div>
         <div class="field wide"><label>Mi participación</label>
@@ -108,7 +108,7 @@
     <fieldset>
       <legend>Paciente</legend>
       <div class="grid">
-        <div class="field"><label for="folio">Folio / iniciales (opcional)</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
+        <div class="field"><label for="folio">Folio / iniciales</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
         <div class="field"><label>Sexo</label>
           <div class="seg"><label><input type="radio" name="sexo" value="M" id="sexo-m" required>Mujer</label><label><input type="radio" name="sexo" value="H" id="sexo-h">Hombre</label></div></div>
         <div class="field"><label for="edad">Edad (años)</label><input id="edad" name="edad" type="number" inputmode="numeric" min="10" max="100" required></div>
@@ -153,7 +153,7 @@
     <fieldset>
       <legend>Evolución (30 días)</legend>
       <div class="grid">
-        <div class="field"><label for="estancia">Estancia hospitalaria (días)</label><input id="estancia" name="estancia" type="number" inputmode="numeric" min="0" max="365" required></div>
+        <div class="field"><label for="estancia">Estancia (días)</label><input id="estancia" name="estancia" type="number" inputmode="numeric" min="0" max="365" required></div>
         <div class="field wide"><div class="seg"><label><input type="checkbox" name="reop" id="reop">Reoperación o readmisión</label><label><input type="checkbox" name="muerte" id="muerte">Muerte</label></div></div>
         <div class="field wide"><label for="notas">Notas (opcional)</label><textarea id="notas" name="notas" maxlength="300" placeholder="Hallazgos, procedimiento 'otra', etc."></textarea></div>
       </div>
