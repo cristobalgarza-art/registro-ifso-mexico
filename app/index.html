@@ -251,6 +251,24 @@
     <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Código</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th>Acciones</th></tr></thead><tbody id="tbody-centros"></tbody></table>
     <div class="empty" id="empty-centros">Aún no hay centros. Crea el primero arriba.</div>
   </div>
+
+  <div class="card" style="margin-top:22px">
+    <h2>Sedes de residencia / fellowship en cirugía bariátrica</h2>
+    <p class="hint" style="margin:0 0 12px">Esta lista es la que ven los residentes al crear su cuenta y al capturar cada caso (solo pueden elegir una sede de aquí). Agrega únicamente los hospitales que tienen programa de residencia o fellowship en cirugía bariátrica y metabólica.</p>
+    <form id="form-sede" novalidate>
+      <div class="grid">
+        <div class="field wide"><label for="se-nombre">Hospital / programa</label><input id="se-nombre" required maxlength="100" placeholder="Christus Muguerza Hospital Sur"></div>
+        <div class="field"><label for="se-ciudad">Ciudad</label><input id="se-ciudad" maxlength="60"></div>
+        <div class="field"><label for="se-estado">Estado</label><input id="se-estado" maxlength="60"></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="submit">Agregar sede</button></div>
+      <p class="status" id="st-sede"></p>
+    </form>
+    <div class="tablewrap" style="margin-top:14px">
+      <table><thead><tr><th>Sede</th><th>Ciudad / Estado</th><th class="num">Residentes</th><th></th></tr></thead><tbody id="tbody-sedes"></tbody></table>
+      <div class="empty" id="empty-sedes">Aún no hay sedes. Agrega la primera arriba.</div>
+    </div>
+  </div>
 </section>
 
 <!-- ADMIN: USUARIOS -->
@@ -321,7 +339,7 @@
 
   // ---------- estado ----------
   let recuperando = /type=recovery/.test(location.hash + location.search);
-  let user = null, perfil = null, centros = [], pacientes = [], perfiles = [], invitaciones = [], registroCerrado = true, pendingDelete = null, tabActual = null;
+  let user = null, perfil = null, centros = [], pacientes = [], perfiles = [], invitaciones = [], sedes = [], registroCerrado = true, pendingDelete = null, tabActual = null;
   const esAdmin = () => perfil && perfil.rol === 'admin';
   const centroNombre = id => (centros.find(c => c.id === id) || {}).nombre || '—';
 
@@ -421,8 +439,8 @@
     ]);
     centros = c.data || []; pacientes = p.data || [];
     if (esAdmin()) {
-      const [u, i, a] = await Promise.all([sb.from('perfiles').select('*').order('creado'), sb.from('invitaciones').select('*').order('creado', { ascending: false }), sb.from('ajustes').select('*').eq('clave', 'registro_cerrado').maybeSingle()]);
-      perfiles = u.data || []; invitaciones = i.data || []; registroCerrado = !a.data || a.data.valor === 'true';
+      const [u, i, a, sd] = await Promise.all([sb.from('perfiles').select('*').order('creado'), sb.from('invitaciones').select('*').order('creado', { ascending: false }), sb.from('ajustes').select('*').eq('clave', 'registro_cerrado').maybeSingle(), sb.from('sedes').select('*').order('nombre')]);
+      perfiles = u.data || []; invitaciones = i.data || []; registroCerrado = !a.data || a.data.valor === 'true'; sedes = sd.data || [];
     }
     renderTodo();
   }
@@ -436,7 +454,7 @@
     llenarAnios($('#filtro-anio'), true); llenarAnios($('#resumen-anio'), true); llenarAnios($('#panel-anio'), true);
     panelCache = { key: null, rows: [] };
     renderRegistros(); if (tabActual === 'resumen') renderResumen(); if (tabActual === 'panel') renderPanel();
-    if (esAdmin()) { renderCentros(); renderUsuarios(); }
+    if (esAdmin()) { renderCentros(); renderUsuarios(); renderSedes(); }
   }
   function anios(){ const s = new Set(pacientes.map(p => p.fecha.slice(0,4))); s.add(String(new Date().getFullYear())); return [...s].sort().reverse(); }
   function llenarAnios(sel, conTodos){
@@ -608,6 +626,31 @@
   });
 
   // ---------- admin: centros ----------
+  // ---------- sedes de residencia ----------
+  let pendingDelSede = null;
+  function renderSedes(){
+    $('#empty-sedes').hidden = sedes.length > 0;
+    $('#tbody-sedes').innerHTML = sedes.map(s => {
+      const n = perfiles.filter(p => p.rol === 'residente' && p.sede === s.nombre).length;
+      const del = pendingDelSede === s.id ? `<button class="rowbtn confirm" data-delsede="${s.id}" data-confirm="1">Confirmar quitar</button>` : `<button class="rowbtn" data-delsede="${s.id}">Quitar</button>`;
+      return `<tr><td style="white-space:normal">${esc(s.nombre)}</td><td>${esc([s.ciudad, s.estado].filter(Boolean).join(' / ') || '—')}</td><td class="num">${n}</td><td>${del}</td></tr>`;
+    }).join('');
+  }
+  $('#form-sede').addEventListener('submit', async ev => {
+    ev.preventDefault(); const nombre = $('#se-nombre').value.trim();
+    if (!nombre) { setStatus($('#st-sede'), 'Escribe el nombre del hospital o programa.', 'err'); return; }
+    setStatus($('#st-sede'), 'Guardando…');
+    const { error } = await sb.from('sedes').insert({ nombre, ciudad: $('#se-ciudad').value.trim() || null, estado: $('#se-estado').value.trim() || null });
+    if (error) { setStatus($('#st-sede'), error.code === '23505' ? 'Esa sede ya existe.' : 'No se pudo guardar: ' + error.message, 'err'); return; }
+    ev.target.reset(); setStatus($('#st-sede'), 'Sede agregada.', 'ok'); await recargar();
+  });
+  $('#tbody-sedes').addEventListener('click', async ev => {
+    const b = ev.target.closest('[data-delsede]'); if (!b) return;
+    if (!b.dataset.confirm) { pendingDelSede = b.dataset.delsede; renderSedes(); setTimeout(() => { if (pendingDelSede === b.dataset.delsede) { pendingDelSede = null; renderSedes(); } }, 5000); return; }
+    const { error } = await sb.from('sedes').delete().eq('id', b.dataset.delsede); pendingDelSede = null;
+    if (error) setStatus($('#st-sede'), 'No se pudo quitar: ' + error.message, 'err'); else { setStatus($('#st-sede'), 'Sede eliminada. Los casos ya capturados con ese nombre se conservan.', 'ok'); await recargar(); }
+  });
+
   $('#form-centro').addEventListener('submit', async ev => {
     ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
     setStatus($('#st-centro'), 'Creando…');
