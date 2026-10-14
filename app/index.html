@@ -67,7 +67,7 @@
     <div id="auth-nueva" hidden>
       <h2>Nueva contraseña</h2>
       <form id="form-nueva" novalidate>
-        <div class="field"><label for="nu-pass">Contraseña nueva (mínimo 8 caracteres)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label for="nu-pass">Contraseña nueva (mín. 8)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
         <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
         <p class="status" id="st-nueva"></p>
       </form>
@@ -111,7 +111,7 @@
       <legend>Fecha e identificación</legend>
       <div class="grid">
         <div class="field"><label for="fecha">Fecha de cirugía</label><input id="fecha" name="fecha" type="date" required></div>
-        <div class="field"><label for="folio">Folio / iniciales (opcional)</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
+        <div class="field"><label for="folio">Folio / iniciales</label><input id="folio" name="folio" placeholder="Sin nombre completo" maxlength="20"></div>
       </div>
     </fieldset>
     <fieldset>
@@ -163,7 +163,7 @@
     <fieldset>
       <legend>Evolución (30 días)</legend>
       <div class="grid">
-        <div class="field"><label for="estancia">Estancia hospitalaria (días)</label><input id="estancia" name="estancia" type="number" inputmode="numeric" min="0" max="365" required></div>
+        <div class="field"><label for="estancia">Estancia (días)</label><input id="estancia" name="estancia" type="number" inputmode="numeric" min="0" max="365" required></div>
         <div class="field wide"><div class="seg"><label><input type="checkbox" name="reop" id="reop">Reoperación o readmisión</label><label><input type="checkbox" name="muerte" id="muerte">Muerte</label></div></div>
         <div class="field wide"><label for="notas">Notas (opcional)</label><textarea id="notas" name="notas" maxlength="300" placeholder="Causa de reoperación, procedimiento 'otra', etc."></textarea></div>
       </div>
@@ -263,7 +263,7 @@
         <div class="field"><label for="in-email">Correo</label><input id="in-email" type="email" required placeholder="cirujano@correo.com"></div>
         <div class="field"><label for="in-rol">Rol</label><select id="in-rol"><option value="centro">Cirujano de centro</option><option value="residente">Residente</option><option value="admin">Coordinador</option></select></div>
         <div class="field"><label for="in-centro">Centro</label><select id="in-centro"><option value="">— sin centro —</option></select></div>
-        <div class="field"><label for="in-nota">Nombre / nota (opcional)</label><input id="in-nota" maxlength="80"></div>
+        <div class="field"><label for="in-nota">Nombre / nota</label><input id="in-nota" maxlength="80"></div>
       </div>
       <div class="actions"><button class="btn primary" type="submit">Agregar a la lista</button><label class="hint" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="registro-cerrado" style="width:auto;min-height:0"> Registro cerrado (solo invitados)</label></div>
       <p class="status" id="st-invitar"></p>
