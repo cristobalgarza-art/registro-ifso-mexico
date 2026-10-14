@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Registro IFSO México</title>
-<meta name="theme-color" content="#0b4f7a">
+<title>Registro Bariátrico México</title>
+<meta name="theme-color" content="#061551">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="IFSO MX">
+<meta name="apple-mobile-web-app-title" content="Registro Bariátrico">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../icon-192.png">
 <link rel="apple-touch-icon" href="../icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="../config.js"></script>
@@ -22,7 +22,7 @@
 
 <!-- ================= AUTH ================= -->
 <div id="view-auth" class="auth" hidden>
-  <h1 id="auth-titulo">Registro IFSO México</h1>
+  <h1 id="auth-titulo">Registro Bariátrico México</h1>
   <p class="org" id="auth-org"></p>
   <div class="card">
     <div id="auth-login">
@@ -91,7 +91,7 @@
 <div id="view-app" hidden>
 <header>
   <div class="brand">
-    <h1>Registro IFSO México <small id="app-sub"></small></h1>
+    <h1>Registro Bariátrico México <small id="app-sub"></small></h1>
     <div class="who"><b id="who-nombre"></b><span id="who-centro"></span><button class="btn link" type="button" id="salir">Salir</button></div>
   </div>
   <nav role="tablist" id="tabs"></nav>
@@ -584,7 +584,7 @@
     const inv = ev.target.closest('[data-inv]');
     if (inv) {
       const c = centros.find(x => x.id === inv.dataset.inv);
-      const msg = `Registro IFSO México – ${c.nombre}\n\n1. Abre ${location.href.split('#')[0]}\n2. Toca "Crear cuenta nueva" (nombre, correo y contraseña).\n3. Escribe el código de tu centro: ${c.codigo}\n\nDespués de eso solo captura cada paciente operado. Toma menos de un minuto por paciente.`;
+      const msg = `Registro Bariátrico México – ${c.nombre}\n\n1. Abre ${location.href.split('#')[0]}\n2. Toca "Crear cuenta nueva" (nombre, correo y contraseña).\n3. Escribe el código de tu centro: ${c.codigo}\n\nDespués de eso solo captura cada paciente operado. Toma menos de un minuto por paciente.`;
       try { await navigator.clipboard.writeText(msg); inv.textContent = 'Copiado'; setTimeout(() => inv.textContent = 'Copiar invitación', 2000); } catch(e) { setStatus(st, 'No se pudo copiar. Código: ' + c.codigo, 'err'); }
       return;
     }
