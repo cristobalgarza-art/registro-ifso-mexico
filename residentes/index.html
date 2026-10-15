@@ -127,7 +127,7 @@
     </fieldset>
     <fieldset>
       <legend>Comorbilidades</legend>
-      <div class="seg"><label><input type="checkbox" name="dm2" id="dm2">DM2</label><label><input type="checkbox" name="has" id="has">Hipertensión (HAS)</label><label><input type="checkbox" name="dislip" id="dislip">Dislipidemia</label></div>
+      <div class="seg" data-comorb></div>
     </fieldset>
     <fieldset>
       <legend>Procedimiento</legend>
@@ -205,6 +205,7 @@
     <div class="card"><h2>Mi participación</h2><div id="g-part"></div></div>
     <div class="card"><h2>Procedimientos</h2><div id="g-proc"></div></div>
     <div class="card"><h2>Perfil del paciente</h2><div id="g-perfil"></div></div>
+    <div class="card"><h2>Comorbilidades</h2><p class="hint">Porcentaje de pacientes con cada una.</p><div id="g-comorb"></div></div>
     <div class="card"><h2>Centros</h2><div id="g-centros"></div></div>
     <div class="card"><h2>Primaria vs. revisional</h2><div id="g-tipo"></div></div>
     <div class="card"><h2>Abordaje</h2><div id="g-abord"></div></div>
@@ -252,6 +253,9 @@
   const hoy = () => new Date().toISOString().slice(0,10);
   const OTRAS = ['sadis','oatb','biparticion','manga_endo','allurion','balon','otra'];
   const cntOtra = arr => arr.filter(r => OTRAS.includes(r.proc)).length;
+  // [clave, etiqueta del formulario, abreviatura en tablas, etiqueta en gráficas]
+  const COMORB = [['dm2','DM2','DM2','DM2'],['prediabetes','Prediabetes','Prediab','Prediabetes'],['resist_ins','Resistencia a la insulina','RI','Resist. insulina'],['has','Hipertensión (HAS)','HAS','Hipertensión'],['dislip','Dislipidemia','Dislip','Dislipidemia'],['saos','SAOS (apnea del sueño)','SAOS','SAOS'],['erge','ERGE (reflujo)','ERGE','ERGE'],['masld','MASLD (hígado graso)','MASLD','MASLD'],['sop','SOP (ovario poliquístico)','SOP','SOP'],['osteoartrosis','Osteoartrosis','OA','Osteoartrosis'],['hipotiroidismo','Hipotiroidismo','Hipotir','Hipotiroidismo'],['depresion','Depresión / ansiedad','Depr','Depresión/ansiedad']];
+  document.querySelectorAll('[data-comorb]').forEach(d => d.innerHTML = COMORB.map(([k,l]) => `<label><input type="checkbox" name="${k}" id="${k}">${l}</label>`).join(''));
   const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, procLargo:{manga:'Manga gástrica',oagb:'OAGB',bypass:'Bypass en Y de Roux',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'}, part:{cirujano:'Cirujano',primer_ayudante:'1er ayudante',segundo_ayudante:'2do ayudante'} };
 
   $('#auth-org').textContent = CFG.ORGANIZACION || '';
@@ -372,7 +376,7 @@
       fecha: fd.get('fecha'), centro_nombre: String(fd.get('centro')).trim(), sector: fd.get('sector'), participacion: fd.get('participacion'),
       folio: String(fd.get('folio')||'').trim() || null, sexo: fd.get('sexo'), edad: Number(fd.get('edad')), imc: Number(fd.get('imc')),
       origen: fd.get('origen') || 'nacional', glp1: fd.get('glp1') === 'si',
-      dm2: !!fd.get('dm2'), has: !!fd.get('has'), dislip: !!fd.get('dislip'),
+      ...Object.fromEntries(COMORB.map(([k]) => [k, !!fd.get(k)])),
       tipo: fd.get('tipo'), proc: fd.get('proc'), abordaje: fd.get('abordaje'),
       estancia: Number(fd.get('estancia')), reop: !!fd.get('reop'), muerte: !!fd.get('muerte'),
       notas: String(fd.get('notas')||'').trim() || null
@@ -399,7 +403,7 @@
     $('#part-' + ({cirujano:'cir',primer_ayudante:'1',segundo_ayudante:'2'})[p.participacion]).checked = true;
     (p.sexo === 'M' ? $('#sexo-m') : $('#sexo-h')).checked = true; $('#edad').value = p.edad; $('#imc').value = p.imc;
     (p.origen === 'internacional' ? $('#origen-int') : $('#origen-nac')).checked = true; (p.glp1 ? $('#glp1-si') : $('#glp1-no')).checked = true;
-    $('#dm2').checked = p.dm2; $('#has').checked = p.has; $('#dislip').checked = p.dislip;
+    COMORB.forEach(([k]) => { $('#'+k).checked = !!p[k]; });
     (p.tipo === 'primaria' ? $('#tipo-p') : $('#tipo-r')).checked = true;
     $('#proc-' + p.proc).checked = true; $('#ab-' + ({laparoscopica:'lap',robotica:'rob',abierta:'abi',endoscopica:'endo'})[p.abordaje]).checked = true;
     $('#estancia').value = p.estancia; $('#reop').checked = p.reop; $('#muerte').checked = p.muerte; $('#notas').value = p.notas || '';
@@ -415,7 +419,7 @@
     $('#count-casos').textContent = rows.length + ' caso' + (rows.length === 1 ? '' : 's');
     $('#empty-casos').hidden = rows.length > 0;
     $('#tbody-casos').innerHTML = rows.map(r => {
-      const com = [r.dm2&&'DM2', r.has&&'HAS', r.dislip&&'Dislip', r.glp1&&'GLP-1'].filter(Boolean).join(', ') || '—';
+      const com = COMORB.filter(([k]) => r[k]).map(([,,ab]) => ab).concat(r.glp1 ? ['GLP-1'] : []).join(', ') || '—';
       const ev = [r.reop&&'<span class="pill rev">Reop/readm</span>', r.muerte&&'<span class="pill muerte">Muerte</span>'].filter(Boolean).join(' ') || '—';
       const del = pendingDelete === r.id ? `<button class="rowbtn confirm" data-del="${r.id}" data-confirm="1">Confirmar borrar</button>` : `<button class="rowbtn" data-del="${r.id}">Borrar</button>`;
       return `<tr class="click" data-edit="${r.id}"><td>${esc(r.fecha)}</td><td>${esc(r.centro_nombre)} <span class="pill">${r.sector==='publico'?'Púb':'Priv'}</span></td><td>${L.part[r.participacion]}</td><td>${esc(r.folio||'—')}</td><td>${r.sexo==='M'?'Mujer':'Hombre'}</td>
@@ -438,8 +442,8 @@
   });
   $('#exportar').addEventListener('click', () => {
     const rows = filtrados();
-    const base = [['fecha','centro','sector','participacion','folio','sexo','edad','imc','origen','glp1_previo','dm2','has','dislip','tipo','procedimiento','abordaje','estancia_dias','reop_readmision','muerte','notas']]
-      .concat(rows.map(p => [p.fecha, p.centro_nombre, p.sector, L.part[p.participacion], p.folio||'', p.sexo, p.edad, Number(p.imc), p.origen, p.glp1?1:0, p.dm2?1:0, p.has?1:0, p.dislip?1:0, p.tipo, L.proc[p.proc], p.abordaje, p.estancia, p.reop?1:0, p.muerte?1:0, p.notas||'']));
+    const base = [['fecha','centro','sector','participacion','folio','sexo','edad','imc','origen','glp1_previo',...COMORB.map(([k]) => k),'tipo','procedimiento','abordaje','estancia_dias','reop_readmision','muerte','notas']]
+      .concat(rows.map(p => [p.fecha, p.centro_nombre, p.sector, L.part[p.participacion], p.folio||'', p.sexo, p.edad, Number(p.imc), p.origen, p.glp1?1:0, ...COMORB.map(([k]) => p[k]?1:0), p.tipo, L.proc[p.proc], p.abordaje, p.estancia, p.reop?1:0, p.muerte?1:0, p.notas||'']));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(base), 'Bitácora');
     const res = resumenRows(rows).filter(r => r[0] !== 'g');
@@ -467,7 +471,7 @@
       ['Pacientes internacionales', pct(rs.filter(r=>r.origen==='internacional').length, rs.length)],['Uso previo de agonista GLP-1', pct(rs.filter(r=>r.glp1).length, rs.length)],
       ['g','Cirugías primarias'],['Primaria manga', cnt(prim,'proc','manga')],['Primaria OAGB', cnt(prim,'proc','oagb')],['Primaria bypass', cnt(prim,'proc','bypass')],['Primaria otra (total)', cntOtra(prim)], ...otras(prim),
       ['g','Cirugías revisionales'],['Revisional manga', cnt(rev,'proc','manga')],['Revisional OAGB', cnt(rev,'proc','oagb')],['Revisional bypass', cnt(rev,'proc','bypass')],['Revisional otra (total)', cntOtra(rev)], ...otras(rev),
-      ['g','Comorbilidades'],['DM2', pct(rs.filter(r=>r.dm2).length, rs.length)],['HAS', pct(rs.filter(r=>r.has).length, rs.length)],['Dislipidemia', pct(rs.filter(r=>r.dislip).length, rs.length)],
+      ['g','Comorbilidades'], ...COMORB.map(([k,l]) => [l, pct(rs.filter(r=>r[k]).length, rs.length)]),
       ['g','Evolución'],['Estancia hospitalaria (días) · mediana (mín – máx)', stat(rs.map(r=>r.estancia))],['Reoperación / readmisión', pct(rs.filter(r=>r.reop).length, rs.length)],['Muerte', pct(rs.filter(r=>r.muerte).length, rs.length)],
       ['g','Abordaje'],['Laparoscópico', cnt(rs,'abordaje','laparoscopica')],['Robótico', cnt(rs,'abordaje','robotica')],['Abierto', cnt(rs,'abordaje','abierta')],['Endoscópico', cnt(rs,'abordaje','endoscopica')],
     ];
@@ -478,7 +482,7 @@
     const anio = $('#panel-anio').value, mes = anio ? Number($('#panel-mes').value || 0) : 0;
     $('#panel-mes').hidden = !anio;
     const rows = casos.filter(p => !anio || p.fecha.startsWith(anio)).map(p => ({ ...p, anio: Number(p.fecha.slice(0,4)), mes: Number(p.fecha.slice(5,7)) }));
-    const rs = Graficas.pintarPanel({ rows, anio, mes, etiquetas: { proc: L.procLargo, abordaje: L.abordaje } });
+    const rs = Graficas.pintarPanel({ rows, anio, mes, etiquetas: { proc: L.procLargo, abordaje: L.abordaje, comorb: Object.fromEntries(COMORB.map(([k,,,g]) => [k,g])) } });
     $('#g-mes-t').textContent = $('#g-mes-t').textContent.replace('Pacientes', 'Casos');
     const n = k => rs.filter(r => r.participacion === k).length;
     Graficas.dona($('#g-part'), { items: [{ label: 'Cirujano', value: n('cirujano'), color: 'var(--g1)' }, { label: '1er ayudante', value: n('primer_ayudante'), color: 'var(--g2)' }, { label: '2do ayudante', value: n('segundo_ayudante'), color: 'var(--g3)' }], titulo: 'casos', unidad: 'casos' });
