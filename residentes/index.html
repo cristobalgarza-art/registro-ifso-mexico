@@ -53,7 +53,8 @@
           <div class="field wide"><label for="re-anio">Año</label>
             <select id="re-anio" required><option value="">Elige…</option><option>R1</option><option>R2</option><option>R3</option><option>R4</option><option>R5</option><option>Fellow cirugía bariátrica</option><option>Otro</option></select></div>
           <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
-          <div class="field wide"><label for="re-pass">Contraseña (mínimo 8 caracteres)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field"><label for="re-pass">Contraseña (mínimo 8)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field"><label for="re-pass2">Repite la contraseña</label><input id="re-pass2" type="password" autocomplete="new-password" minlength="8" required></div>
         </div>
         <label class="acepto"><input type="checkbox" id="re-acepto" required><span>He leído y acepto el <a href="../privacidad.html" target="_blank" rel="noopener">aviso de privacidad y los términos de uso</a> del Registro.</span></label>
         <div class="actions"><button class="btn primary" type="submit">Crear cuenta</button><button class="btn link" type="button" data-auth="login">Ya tengo cuenta</button></div>
@@ -73,7 +74,10 @@
     <div id="auth-nueva" hidden>
       <h2>Nueva contraseña</h2>
       <form id="form-nueva" novalidate>
-        <div class="field"><label for="nu-pass">Contraseña nueva (mín. 8)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="grid">
+          <div class="field"><label for="nu-pass">Contraseña nueva (mín. 8)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+          <div class="field"><label for="nu-pass2">Repite la contraseña</label><input id="nu-pass2" type="password" minlength="8" autocomplete="new-password" required></div>
+        </div>
         <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
         <p class="status" id="st-nueva"></p>
       </form>
@@ -276,6 +280,7 @@
   document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => authPanel(b.dataset.auth)));
 
   // ---------- auth ----------
+  const coinciden = (a, b, st) => { if ($(a).value !== $(b).value) { setStatus($(st), 'Las contraseñas no coinciden. Escríbela igual en los dos cuadros.', 'err'); $(b).focus(); return false; } setStatus($(st), ''); return true; };
   $('#form-login').addEventListener('submit', async ev => {
     ev.preventDefault(); setStatus($('#st-login'), 'Entrando…');
     const { error } = await sb.auth.signInWithPassword({ email: $('#li-email').value.trim(), password: $('#li-pass').value });
@@ -284,6 +289,7 @@
   });
   $('#form-registro').addEventListener('submit', async ev => {
     ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    if (!coinciden('#re-pass', '#re-pass2', '#st-registro')) return;
     if (!$('#re-acepto').checked) { setStatus($('#st-registro'), 'Para crear la cuenta debes aceptar el aviso de privacidad y los términos de uso.', 'err'); return; }
     setStatus($('#st-registro'), 'Creando cuenta…');
     const inv = await sb.rpc('correo_invitado', { p_email: $('#re-email').value.trim() });
@@ -301,6 +307,7 @@
   });
   $('#form-nueva').addEventListener('submit', async ev => {
     ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    if (!coinciden('#nu-pass', '#nu-pass2', '#st-nueva')) return;
     const { error } = await sb.auth.updateUser({ password: $('#nu-pass').value });
     if (error) setStatus($('#st-nueva'), 'No se pudo cambiar: ' + error.message, 'err');
     else { setStatus($('#st-nueva'), 'Contraseña guardada.', 'ok'); recuperando = false; history.replaceState(null, '', location.pathname); await cargarSesion(); }
