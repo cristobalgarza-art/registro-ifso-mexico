@@ -143,10 +143,15 @@
     barrasH($('#g-proc'), { cats: procs, total: n });
 
     porcentajes($('#g-perfil'), { items: [
-      { label: 'Mujeres', n: M, d: n }, { label: 'DM2', n: rs.filter(r => r.dm2).length, d: n }, { label: 'Hipertensión', n: rs.filter(r => r.has).length, d: n },
-      { label: 'Dislipidemia', n: rs.filter(r => r.dislip).length, d: n }, { label: 'GLP-1 previo', n: rs.filter(r => r.glp1).length, d: n },
-      { label: 'Internacionales', n: cnt('origen', 'internacional'), d: n }, { label: 'Atención privada', n: cnt('sector', 'privado'), d: n }
+      { label: 'Mujeres', n: M, d: n }, { label: 'GLP-1 previo', n: rs.filter(r => r.glp1).length, d: n },
+      { label: 'Internacionales', n: cnt('origen', 'internacional'), d: n }, { label: 'Atención privada', n: cnt('sector', 'privado'), d: n },
+      { label: 'Atención pública', n: cnt('sector', 'publico'), d: n }
     ].filter(() => n > 0) });
+    if ($('#g-comorb')) {
+      const com = etiquetas.comorb || { dm2: 'DM2', has: 'Hipertensión', dislip: 'Dislipidemia' };
+      const cats = Object.keys(com).map(k => ({ label: com[k], value: rs.filter(r => r[k]).length })).filter(c => c.value > 0).sort((a, b) => b.value - a.value);
+      barrasH($('#g-comorb'), { cats, total: n, color: 'var(--g2)' });
+    }
 
     dona($('#g-tipo'), { items: [{ label: 'Primaria', value: cnt('tipo', 'primaria'), color: 'var(--g1)' }, { label: 'Revisional', value: cnt('tipo', 'revisional'), color: 'var(--g2)' }], titulo: 'cirugías' });
     const AB = [['laparoscopica', 'Laparoscópico', 'var(--g1)'], ['robotica', 'Robótico', 'var(--g2)'], ['abierta', 'Abierto', 'var(--g3)'], ['endoscopica', 'Endoscópico', 'var(--g4)']];
