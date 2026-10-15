@@ -45,11 +45,15 @@
 
     <div id="auth-registro" hidden>
       <h2>Crear cuenta</h2>
+      <p class="hint" style="margin:0 0 12px">Usa el correo al que el Colegio te envió la invitación. Cada socio es un centro del registro: se crea con tu nombre en este paso.</p>
       <form id="form-registro" novalidate>
         <div class="grid">
-          <div class="field wide"><label for="re-nombre">Nombre (como aparecerá en el registro)</label><input id="re-nombre" required placeholder="Dr. Nombre Apellido"></div>
+          <div class="field wide"><label for="re-nombre">Nombre (así se llamará tu centro)</label><input id="re-nombre" required placeholder="Dr. Nombre Apellido"></div>
           <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
           <div class="field wide"><label for="re-pass">Contraseña (mínimo 8 caracteres)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field"><label for="re-ciudad">Ciudad donde operas</label><input id="re-ciudad" required maxlength="60"></div>
+          <div class="field"><label for="re-estado">Estado</label><select id="re-estado" required data-estados></select></div>
+          <div class="field wide"><label for="re-hosp">Hospital(es) donde operas (opcional)</label><input id="re-hosp" maxlength="160" placeholder="Clínica de Especialistas, Hospital Ángeles"></div>
         </div>
         <label class="acepto"><input type="checkbox" id="re-acepto" required><span>He leído y acepto el <a href="../privacidad.html" target="_blank" rel="noopener">aviso de privacidad y los términos de uso</a> del Registro.</span></label>
         <div class="actions"><button class="btn primary" type="submit">Crear cuenta</button><button class="btn link" type="button" data-auth="login">Ya tengo cuenta</button></div>
@@ -80,11 +84,15 @@
 <!-- ================= SIN CENTRO ================= -->
 <div id="view-codigo" class="auth" hidden>
   <h1>Un paso más</h1>
-  <p class="org">Ingresa el código de tu centro. Te lo da el coordinador del registro.</p>
+  <p class="org">Tu cuenta aún no tiene centro. Completa estos datos y queda creado con tu nombre.</p>
   <div class="card">
-    <form id="form-codigo" novalidate>
-      <div class="field"><label for="co-codigo">Código del centro</label><input id="co-codigo" required maxlength="6" style="font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase" placeholder="A1B2C3"></div>
-      <div class="actions"><button class="btn primary" type="submit">Unirme a mi centro</button><button class="btn link" type="button" id="co-salir">Cerrar sesión</button></div>
+    <form id="form-micentro" novalidate>
+      <div class="grid">
+        <div class="field"><label for="mc-ciudad">Ciudad donde operas</label><input id="mc-ciudad" required maxlength="60"></div>
+        <div class="field"><label for="mc-estado">Estado</label><select id="mc-estado" required data-estados></select></div>
+        <div class="field wide"><label for="mc-hosp">Hospital(es) donde operas (opcional)</label><input id="mc-hosp" maxlength="160"></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="submit">Crear mi centro</button><button class="btn link" type="button" id="co-salir">Cerrar sesión</button></div>
       <p class="status" id="st-codigo"></p>
     </form>
   </div>
@@ -235,23 +243,12 @@
 <!-- ADMIN: CENTROS -->
 <section id="sec-centros" hidden>
   <div class="kpis" id="kpis"></div>
-  <div class="card">
-    <h2>Agregar centro</h2>
-    <form id="form-centro" novalidate>
-      <div class="grid">
-        <div class="field wide"><label for="ce-nombre">Nombre del centro / hospital</label><input id="ce-nombre" required></div>
-        <div class="field"><label for="ce-ciudad">Ciudad</label><input id="ce-ciudad"></div>
-        <div class="field"><label for="ce-estado">Estado</label><input id="ce-estado"></div>
-      </div>
-      <div class="actions"><button class="btn primary" type="submit">Crear centro y generar código</button></div>
-      <p class="status" id="st-centro"></p>
-    </form>
-  </div>
-  <p class="hint" style="margin:14px 0 8px">La forma recomendada de dar acceso es invitar por correo en la pestaña <b>Usuarios</b>. El código del centro es la alternativa cuando el registro está abierto. Un centro <b>inactivo</b> conserva sus datos pero ya no acepta nuevos usuarios con su código. <b>Fusionar</b> pasa todos los pacientes y usuarios de un centro a otro y elimina el primero.</p>
+  <h2 style="margin:4px 0 6px">Centros participantes</h2>
+  <p class="hint" style="margin:0 0 12px">Cada socio del Colegio es un centro: se crea automáticamente cuando el socio se registra con su correo invitado (pestaña <b>Usuarios</b>); no hay que darlos de alta. Aquí solo supervisas: <b>Renombrar</b> corrige el nombre, <b>Fusionar</b> une dos centros duplicados (pasa pacientes y usuarios al destino y elimina el origen) y <b>Desactivar</b> marca un centro que ya no participa.</p>
   <p class="status" id="st-centros-acciones"></p>
   <div class="tablewrap">
-    <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Código</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th>Acciones</th></tr></thead><tbody id="tbody-centros"></tbody></table>
-    <div class="empty" id="empty-centros">Aún no hay centros. Crea el primero arriba.</div>
+    <table><thead><tr><th>Centro</th><th>Ciudad / Estado</th><th>Hospitales</th><th class="num">Usuarios</th><th class="num">Pacientes</th><th>Acciones</th></tr></thead><tbody id="tbody-centros"></tbody></table>
+    <div class="empty" id="empty-centros">Aún no hay centros. Se crean solos cuando los socios se registran.</div>
   </div>
 
   <div class="card" style="margin-top:22px">
@@ -276,22 +273,22 @@
 <!-- ADMIN: USUARIOS -->
 <section id="sec-usuarios" hidden>
   <div class="card">
-    <h2>Invitar</h2>
-    <p class="hint" style="margin:0 0 12px">Solo puede crear cuenta un correo que esté en esta lista. Al registrarse con ese correo, la persona entra directo a su centro (o a la bitácora de residentes) sin necesidad de código.</p>
+    <h2>Invitar socios</h2>
+    <p class="hint" style="margin:0 0 12px">Pega la lista de correos de los socios activos (uno por línea o separados por comas). Solo esos correos pueden crear cuenta; al registrarse, cada socio crea su propio centro. Después envíales la liga del registro por correo masivo: el botón <b>Copiar texto del correo</b> te da el mensaje listo para pegar en Gmail (ponlos en copia oculta).</p>
     <form id="form-invitar" novalidate>
-      <div class="grid">
-        <div class="field"><label for="in-email">Correo</label><input id="in-email" type="email" required placeholder="cirujano@correo.com"></div>
-        <div class="field"><label for="in-rol">Rol</label><select id="in-rol"><option value="centro">Cirujano de centro</option><option value="residente">Residente</option><option value="admin">Coordinador</option></select></div>
-        <div class="field"><label for="in-centro">Centro</label><select id="in-centro"><option value="">— sin centro —</option></select></div>
-        <div class="field"><label for="in-nota">Nombre / nota</label><input id="in-nota" maxlength="80"></div>
+      <div class="field wide"><label for="in-lista">Correos</label><textarea id="in-lista" rows="5" placeholder="socio1@correo.com&#10;socio2@correo.com"></textarea></div>
+      <div class="grid" style="margin-top:12px">
+        <div class="field"><label for="in-rol">Rol</label><select id="in-rol"><option value="centro">Cirujano socio</option><option value="residente">Residente</option><option value="admin">Coordinador</option></select></div>
+        <div class="field"><label for="in-nota">Nota (opcional)</label><input id="in-nota" maxlength="80" placeholder="Socios activos 2026"></div>
       </div>
-      <div class="actions"><button class="btn primary" type="submit">Agregar a la lista</button><label class="hint" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="registro-cerrado" style="width:auto;min-height:0"> Registro cerrado (solo invitados)</label></div>
+      <div class="actions"><button class="btn primary" type="submit">Agregar a la lista</button><button class="btn" type="button" id="copiar-masivo">Copiar texto del correo</button><label class="hint" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="registro-cerrado" style="width:auto;min-height:0"> Registro cerrado (solo invitados)</label></div>
       <p class="status" id="st-invitar"></p>
     </form>
   </div>
   <h2 style="margin:18px 0 8px">Invitaciones</h2>
+  <div class="toolbar"><input id="filtro-inv" placeholder="Buscar correo…"><span class="count" id="count-inv"></span></div>
   <div class="tablewrap">
-    <table><thead><tr><th>Correo</th><th>Rol</th><th>Centro</th><th>Nota</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbody-invitaciones"></tbody></table>
+    <table><thead><tr><th>Correo</th><th>Rol</th><th>Nota</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="tbody-invitaciones"></tbody></table>
     <div class="empty" id="empty-invitaciones">Aún no has invitado a nadie.</div>
   </div>
   <h2 style="margin:18px 0 8px">Usuarios con cuenta</h2>
@@ -345,6 +342,10 @@
   const esAdmin = () => perfil && perfil.rol === 'admin';
   const centroNombre = id => (centros.find(c => c.id === id) || {}).nombre || '—';
 
+  // ---------- catálogo de estados ----------
+  const ESTADOS = ['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas','Fuera de México'];
+  document.querySelectorAll('select[data-estados]').forEach(s => s.innerHTML = '<option value="">Elige…</option>' + ESTADOS.map(e => `<option>${e}</option>`).join(''));
+
   // ---------- vistas ----------
   function mostrar(v){ ['auth','codigo','app'].forEach(x => $('#view-'+x).hidden = x !== v); }
   function authPanel(p){ ['login','registro','olvide','nueva'].forEach(x => $('#auth-'+x).hidden = x !== p); }
@@ -364,7 +365,7 @@
     const inv = await sb.rpc('correo_invitado', { p_email: $('#re-email').value.trim() });
     if (!inv.error && inv.data === false) { setStatus($('#st-registro'), 'Este correo no tiene invitación. Pide al coordinador del registro que te invite con este mismo correo.', 'err'); return; }
     if (!$('#re-acepto').checked) { setStatus($('#st-registro'), 'Para crear la cuenta debes aceptar el aviso de privacidad y los términos de uso.', 'err'); return; }
-    const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value, options: { data: { nombre: $('#re-nombre').value.trim(), acepto_terminos: new Date().toISOString() } } });
+    const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value, options: { data: { nombre: $('#re-nombre').value.trim(), ciudad: $('#re-ciudad').value.trim(), estado: $('#re-estado').value, hospitales: $('#re-hosp').value.trim(), acepto_terminos: new Date().toISOString() } } });
     if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : error.message.includes('Database') ? 'Este correo no tiene invitación. Pide al coordinador que te invite.' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
     if (data.session) setStatus($('#st-registro'), '');
     else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
@@ -402,11 +403,12 @@
     await entrarApp();
   }
 
-  $('#form-codigo').addEventListener('submit', async ev => {
-    ev.preventDefault(); setStatus($('#st-codigo'), 'Verificando…');
-    const { data, error } = await sb.rpc('unirse_a_centro', { p_codigo: $('#co-codigo').value.trim() });
-    if (error) { setStatus($('#st-codigo'), 'Código no válido. Revísalo con tu coordinador.', 'err'); return; }
-    perfil.centro_id = data.id; await entrarApp();
+  $('#form-micentro').addEventListener('submit', async ev => {
+    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    setStatus($('#st-codigo'), 'Creando tu centro…');
+    const { data, error } = await sb.rpc('crear_mi_centro', { p_ciudad: $('#mc-ciudad').value.trim(), p_estado: $('#mc-estado').value, p_hospitales: $('#mc-hosp').value.trim() || null });
+    if (error || !data) { setStatus($('#st-codigo'), 'No se pudo crear el centro: ' + (error ? error.message : 'intenta de nuevo'), 'err'); return; }
+    perfil.centro_id = data; await entrarApp();
   });
 
   // ---------- app ----------
@@ -654,13 +656,6 @@
     if (error) setStatus($('#st-sede'), 'No se pudo quitar: ' + error.message, 'err'); else { setStatus($('#st-sede'), 'Sede eliminada. Los casos ya capturados con ese nombre se conservan.', 'ok'); await recargar(); }
   });
 
-  $('#form-centro').addEventListener('submit', async ev => {
-    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
-    setStatus($('#st-centro'), 'Creando…');
-    const { error } = await sb.from('centros').insert({ nombre: $('#ce-nombre').value.trim(), ciudad: $('#ce-ciudad').value.trim() || null, estado: $('#ce-estado').value.trim() || null });
-    if (error) { setStatus($('#st-centro'), error.code === '23505' ? 'Ya existe un centro con ese nombre.' : 'No se pudo crear: ' + error.message, 'err'); return; }
-    f.reset(); setStatus($('#st-centro'), 'Centro creado.', 'ok'); await recargar();
-  });
   function renderCentros(){
     const nUsers = id => perfiles.filter(p => p.centro_id === id).length, nPac = id => pacientes.filter(p => p.centro_id === id).length;
     $('#kpis').innerHTML = [[centros.length,'centros'],[perfiles.length,'usuarios'],[pacientes.length,'pacientes'],[pacientes.filter(p=>p.fecha.startsWith(String(new Date().getFullYear()))).length,'pacientes ' + new Date().getFullYear()]]
@@ -676,29 +671,22 @@
       } else if (accionCentro.id === c.id && accionCentro.tipo === 'borrar') {
         acciones = `¿Borrar "${esc(c.nombre)}"? <button class="rowbtn confirm" data-ok="borrar" data-id="${c.id}">Sí, borrar</button> <button class="rowbtn" data-cancel="1">Cancelar</button>`;
       } else {
-        acciones = `<button class="rowbtn" data-inv="${c.id}">Copiar invitación</button> <button class="rowbtn" data-accion="renombrar" data-id="${c.id}">Renombrar</button> <button class="rowbtn" data-accion="toggle" data-id="${c.id}">${c.activo ? 'Desactivar' : 'Reactivar'}</button> <button class="rowbtn" data-accion="fusionar" data-id="${c.id}">Fusionar</button>` + (nPac(c.id) === 0 ? ` <button class="rowbtn" data-accion="borrar" data-id="${c.id}">Borrar</button>` : '');
+        acciones = `<button class="rowbtn" data-accion="renombrar" data-id="${c.id}">Renombrar</button> <button class="rowbtn" data-accion="toggle" data-id="${c.id}">${c.activo ? 'Desactivar' : 'Reactivar'}</button> <button class="rowbtn" data-accion="fusionar" data-id="${c.id}">Fusionar</button>` + (nPac(c.id) === 0 ? ` <button class="rowbtn" data-accion="borrar" data-id="${c.id}">Borrar</button>` : '');
       }
-      return `<tr><td>${esc(c.nombre)}${c.activo ? '' : ' <span class="pill rev">Inactivo</span>'}</td><td>${esc([c.ciudad,c.estado].filter(Boolean).join(', ')||'—')}</td><td><span class="code">${esc(c.codigo)}</span></td>
+      return `<tr><td>${esc(c.nombre)}${c.activo ? '' : ' <span class="pill rev">Inactivo</span>'}</td><td>${esc([c.ciudad,c.estado].filter(Boolean).join(', ')||'—')}</td><td style="white-space:normal;max-width:220px">${esc(c.hospitales||'—')}</td>
       <td class="num">${nUsers(c.id)}</td><td class="num">${nPac(c.id)}</td><td style="white-space:normal;min-width:260px">${acciones}</td></tr>`;
     }).join('');
   }
   let accionCentro = { id: null, tipo: null };
   $('#tbody-centros').addEventListener('click', async ev => {
     const st = $('#st-centros-acciones');
-    const inv = ev.target.closest('[data-inv]');
-    if (inv) {
-      const c = centros.find(x => x.id === inv.dataset.inv);
-      const msg = `Registro Bariátrico México – ${c.nombre}\n\n1. Abre ${location.href.split('#')[0]}\n2. Toca "Crear cuenta nueva" (nombre, correo y contraseña).\n3. Escribe el código de tu centro: ${c.codigo}\n\nDespués de eso solo captura cada paciente operado. Toma menos de un minuto por paciente.`;
-      try { await navigator.clipboard.writeText(msg); inv.textContent = 'Copiado'; setTimeout(() => inv.textContent = 'Copiar invitación', 2000); } catch(e) { setStatus(st, 'No se pudo copiar. Código: ' + c.codigo, 'err'); }
-      return;
-    }
     if (ev.target.closest('[data-cancel]')) { accionCentro = { id: null, tipo: null }; renderCentros(); return; }
     const a = ev.target.closest('[data-accion]');
     if (a) {
       const c = centros.find(x => x.id === a.dataset.id);
       if (a.dataset.accion === 'toggle') {
         const { error } = await sb.from('centros').update({ activo: !c.activo }).eq('id', c.id);
-        setStatus(st, error ? 'No se pudo cambiar: ' + error.message : (c.activo ? `"${c.nombre}" desactivado: su código ya no admite nuevos usuarios.` : `"${c.nombre}" reactivado.`), error ? 'err' : 'ok');
+        setStatus(st, error ? 'No se pudo cambiar: ' + error.message : (c.activo ? `"${c.nombre}" marcado como inactivo. Conserva sus datos.` : `"${c.nombre}" reactivado.`), error ? 'err' : 'ok');
         await recargar(); return;
       }
       accionCentro = { id: c.id, tipo: a.dataset.accion }; renderCentros(); return;
@@ -732,16 +720,42 @@
       <td><select data-centro="${p.user_id}">${opts}</select></td><td>${esc((p.creado||'').slice(0,10))}</td><td>${del}</td></tr>`; }).join('');
     perfiles.forEach(p => { const s = $(`[data-centro="${p.user_id}"]`); if (s) s.value = p.centro_id || ''; });
     // invitaciones
-    const keep = (sel, html, first) => { const v = sel.value; sel.innerHTML = first + html; if ([...sel.options].some(o => o.value === v)) sel.value = v; };
-    keep($('#in-centro'), centros.filter(c => c.activo !== false).map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join(''), '<option value="">— sin centro —</option>');
     $('#registro-cerrado').checked = registroCerrado;
     $('#empty-invitaciones').hidden = invitaciones.length > 0;
     const ROL = { centro: 'Cirujano', residente: 'Residente', admin: 'Coordinador' };
-    $('#tbody-invitaciones').innerHTML = invitaciones.map(i => `<tr>
-      <td>${esc(i.email)}</td><td>${ROL[i.rol] || i.rol}</td><td>${i.centro_id ? esc(centroNombre(i.centro_id)) : '—'}</td><td>${esc(i.nota||'')}</td>
+    const q = $('#filtro-inv').value.trim().toLowerCase();
+    const lista = invitaciones.filter(i => !q || i.email.includes(q) || (i.nota||'').toLowerCase().includes(q));
+    const usados = invitaciones.filter(i => i.usado).length;
+    $('#count-inv').textContent = invitaciones.length ? `${invitaciones.length} invitado${invitaciones.length === 1 ? '' : 's'} · ${usados} con cuenta · ${invitaciones.length - usados} pendiente${invitaciones.length - usados === 1 ? '' : 's'}` : '';
+    $('#tbody-invitaciones').innerHTML = lista.map(i => `<tr>
+      <td>${esc(i.email)}</td><td>${ROL[i.rol] || i.rol}</td><td>${esc(i.nota||'')}</td>
       <td>${i.usado ? '<span class="pill">Registrado ' + esc(i.usado.slice(0,10)) + '</span>' : '<span class="pill rev">Pendiente</span>'}</td>
       <td style="white-space:normal"><button class="rowbtn" data-copyinv="${esc(i.email)}">Copiar mensaje</button> ${i.usado ? '' : `<button class="rowbtn" data-delinv="${esc(i.email)}">Quitar</button>`}</td></tr>`).join('');
   }
+  $('#filtro-inv').addEventListener('input', renderUsuarios);
+  const BASE_URL = () => location.href.split('#')[0].replace(/app\/?(\?.*)?$/, '');
+  const CORREO_MASIVO = () => `Asunto: Registro Bariátrico México – acceso para socios del CMCOEM
+
+Estimado(a) socio(a):
+
+El Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas pone en marcha el Registro Bariátrico México, el registro nacional de cirugía bariátrica y metabólica con el que el Colegio integrará el reporte anual para IFSO. Cada socio activo cuenta como un centro y captura sus propios procedimientos. Los datos se registran sin nombres ni identificadores del paciente.
+
+Para crear tu cuenta:
+1. Entra a ${BASE_URL()} y toca "Entrar al registro".
+2. Elige "Crear cuenta nueva" usando este mismo correo (es el que está autorizado).
+3. Escribe tu nombre, ciudad y hospital(es) donde operas y acepta el aviso de privacidad. Tu centro queda creado en ese momento.
+4. Confirma tu correo con el enlace que recibirás y captura cada paciente operado; toma menos de un minuto.
+
+Desde el celular puedes instalarlo como app con el botón "Instalar app".
+
+Dudas o problemas: contacto@registrobariatrico.com
+
+Coordinación del Registro Bariátrico México
+Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas, A.C.`;
+  $('#copiar-masivo').addEventListener('click', async ev => {
+    try { await navigator.clipboard.writeText(CORREO_MASIVO()); ev.target.textContent = 'Copiado'; setTimeout(() => ev.target.textContent = 'Copiar texto del correo', 2000); }
+    catch(e) { setStatus($('#st-invitar'), 'No se pudo copiar al portapapeles.', 'err'); }
+  });
   let pendingDelUser = null;
   $('#tbody-usuarios').addEventListener('change', async ev => {
     const s = ev.target; const uid = s.dataset.rol || s.dataset.centro; if (!uid) return;
@@ -760,11 +774,29 @@
     await recargar();
   });
   $('#form-invitar').addEventListener('submit', async ev => {
-    ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
-    const rol = $('#in-rol').value;
-    const { error } = await sb.from('invitaciones').upsert({ email: $('#in-email').value.trim().toLowerCase(), rol, centro_id: rol === 'residente' ? null : ($('#in-centro').value || null), nota: $('#in-nota').value.trim() || null, invitado_por: user.id });
-    if (error) { setStatus($('#st-invitar'), 'No se pudo agregar: ' + error.message, 'err'); return; }
-    $('#in-email').value = ''; $('#in-nota').value = ''; setStatus($('#st-invitar'), 'Agregado. Usa "Copiar mensaje" para mandarle la invitación.', 'ok');
+    ev.preventDefault();
+    const rol = $('#in-rol').value, nota = $('#in-nota').value.trim() || null;
+    const crudos = $('#in-lista').value.split(/[\s,;<>"'()]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (!crudos.length) { setStatus($('#st-invitar'), 'Pega al menos un correo.', 'err'); return; }
+    const valido = e => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(e);
+    const existentes = new Set(invitaciones.map(i => i.email.toLowerCase()));
+    const vistos = new Set(), nuevos = [], repetidos = [], invalidos = [];
+    for (const e of crudos) {
+      if (vistos.has(e)) continue; vistos.add(e);
+      if (!valido(e)) { invalidos.push(e); continue; }
+      if (existentes.has(e)) { repetidos.push(e); continue; }
+      nuevos.push({ email: e, rol, centro_id: null, nota, invitado_por: user.id });
+    }
+    if (nuevos.length) {
+      setStatus($('#st-invitar'), `Agregando ${nuevos.length}…`);
+      const { error } = await sb.from('invitaciones').insert(nuevos);
+      if (error) { setStatus($('#st-invitar'), 'No se pudo agregar: ' + error.message, 'err'); return; }
+    }
+    const partes = [`${nuevos.length} correo${nuevos.length === 1 ? '' : 's'} agregado${nuevos.length === 1 ? '' : 's'}`];
+    if (repetidos.length) partes.push(`${repetidos.length} ya estaba${repetidos.length === 1 ? '' : 'n'} en la lista`);
+    if (invalidos.length) partes.push(`${invalidos.length} no válido${invalidos.length === 1 ? '' : 's'}: ${invalidos.join(', ')}`);
+    $('#in-lista').value = invalidos.join('\n');
+    setStatus($('#st-invitar'), partes.join(' · ') + (nuevos.length ? '. Ahora envíales la liga: usa "Copiar texto del correo".' : '.'), invalidos.length && !nuevos.length ? 'err' : 'ok');
     await recargar();
   });
   $('#registro-cerrado').addEventListener('change', async ev => {
@@ -775,10 +807,10 @@
   $('#tbody-invitaciones').addEventListener('click', async ev => {
     const c = ev.target.closest('[data-copyinv]');
     if (c) {
-      const i = invitaciones.find(x => x.email === c.dataset.copyinv); const base = location.href.split('#')[0].replace(/app\/?$/, '');
+      const i = invitaciones.find(x => x.email === c.dataset.copyinv); const base = BASE_URL();
       const msg = i.rol === 'residente'
         ? `Bitácora de Residentes – Registro Bariátrico México\n\n1. Abre ${base}residentes/\n2. Toca "Soy residente, crear mi cuenta" usando este correo: ${i.email}\n3. Captura cada cirugía en la que participes.\n\nTu bitácora es personal y puedes descargarla en Excel cuando la necesites.`
-        : `Registro Bariátrico México – ${i.centro_id ? centroNombre(i.centro_id) : 'Coordinación'}\n\n1. Abre ${base}app/\n2. Toca "Crear cuenta nueva" usando este correo: ${i.email}\n3. Entras directo a tu centro. Captura cada paciente operado; toma menos de un minuto.`;
+        : `Registro Bariátrico México\n\n1. Abre ${base}app/\n2. Toca "Crear cuenta nueva" usando este correo: ${i.email}\n3. Escribe tu nombre, ciudad y hospital(es) donde operas; tu centro queda creado en ese momento.\n4. Confirma tu correo con el enlace que recibirás y captura cada paciente operado; toma menos de un minuto.\n\nDudas: contacto@registrobariatrico.com`;
       try { await navigator.clipboard.writeText(msg); c.textContent = 'Copiado'; setTimeout(() => c.textContent = 'Copiar mensaje', 2000); } catch(e) { setStatus($('#st-invitar'), 'No se pudo copiar.', 'err'); }
       return;
     }
