@@ -13,7 +13,9 @@
 <style>
 .topbar{background:#fff;border-bottom:1px solid var(--line)}
 .topbar .in{max-width:900px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.topbar img{height:72px;width:auto;display:block}
+.topbar .logo{--s:160px;display:block;height:calc(var(--s)*.75);width:calc(var(--s)*.88);overflow:hidden;flex:none}
+.topbar .logo img{height:var(--s);width:var(--s);max-width:none;display:block;margin:calc(var(--s)*-.13) 0 0 calc(var(--s)*-.06)}
+@media (max-width:640px){ .topbar .logo{--s:124px} }
 .topbar a.btn{padding:8px 16px;min-height:0}
 .hero{background:linear-gradient(135deg,#061551 0%,#1b2a7a 60%,#593baa 100%);color:#fff;padding:36px 16px 32px}
 .hero .in{max-width:900px;margin:0 auto}
@@ -30,12 +32,12 @@ body.inicio .wrap{padding-top:22px}
 .toc{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
 .toc a{text-decoration:none;color:var(--navy);background:var(--accent-soft);padding:6px 12px;border-radius:999px;font-size:.88rem;font-weight:500}
 footer{color:var(--muted);font-size:.85rem;text-align:center;padding:32px 0 8px}
-@media (prefers-color-scheme: dark){ .topbar{background:#0f1226} .doc h2,.doc h3,.toc a{color:var(--fg)} }
+@media (prefers-color-scheme: dark){ .topbar{background:#fff;border-bottom-color:#2b3741} .topbar .btn{background:#fff;color:#061551;border-color:#d9dcea} .doc h2,.doc h3,.toc a{color:var(--fg)} }
 </style>
 </head>
 <body class="inicio">
 <div class="topbar"><div class="in">
-  <a href="./"><img src="logo.jpg" alt="Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas"></a>
+  <a class="logo" href="./"><img src="logo.jpg" alt="Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas"></a>
   <a class="btn" href="app/">Iniciar sesión</a>
 </div></div>
 <div class="hero"><div class="in">
