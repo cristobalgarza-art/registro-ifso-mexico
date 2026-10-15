@@ -50,7 +50,8 @@
         <div class="grid">
           <div class="field wide"><label for="re-nombre">Nombre (así se llamará tu centro)</label><input id="re-nombre" required placeholder="Dr. Nombre Apellido"></div>
           <div class="field wide"><label for="re-email">Correo</label><input id="re-email" type="email" autocomplete="username" required></div>
-          <div class="field wide"><label for="re-pass">Contraseña (mínimo 8 caracteres)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field"><label for="re-pass">Contraseña (mínimo 8)</label><input id="re-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field"><label for="re-pass2">Repite la contraseña</label><input id="re-pass2" type="password" autocomplete="new-password" minlength="8" required></div>
           <div class="field"><label for="re-ciudad">Ciudad donde operas</label><input id="re-ciudad" required maxlength="60"></div>
           <div class="field"><label for="re-estado">Estado</label><select id="re-estado" required data-estados></select></div>
           <div class="field wide"><label for="re-hosp">Hospital(es) donde operas (opcional)</label><input id="re-hosp" maxlength="160" placeholder="Clínica de Especialistas, Hospital Ángeles"></div>
@@ -73,7 +74,10 @@
     <div id="auth-nueva" hidden>
       <h2>Nueva contraseña</h2>
       <form id="form-nueva" novalidate>
-        <div class="field"><label for="nu-pass">Contraseña nueva (mín. 8)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+        <div class="grid">
+          <div class="field"><label for="nu-pass">Contraseña nueva (mín. 8)</label><input id="nu-pass" type="password" minlength="8" autocomplete="new-password" required></div>
+          <div class="field"><label for="nu-pass2">Repite la contraseña</label><input id="nu-pass2" type="password" minlength="8" autocomplete="new-password" required></div>
+        </div>
         <div class="actions"><button class="btn primary" type="submit">Guardar</button></div>
         <p class="status" id="st-nueva"></p>
       </form>
@@ -352,6 +356,7 @@
   document.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => authPanel(b.dataset.auth)));
 
   // ---------- auth ----------
+  const coinciden = (a, b, st) => { if ($(a).value !== $(b).value) { setStatus($(st), 'Las contraseñas no coinciden. Escríbela igual en los dos cuadros.', 'err'); $(b).focus(); return false; } setStatus($(st), ''); return true; };
   $('#form-login').addEventListener('submit', async ev => {
     ev.preventDefault(); setStatus($('#st-login'), 'Entrando…');
     const { error } = await sb.auth.signInWithPassword({ email: $('#li-email').value.trim(), password: $('#li-pass').value });
@@ -361,6 +366,7 @@
   $('#form-registro').addEventListener('submit', async ev => {
     ev.preventDefault();
     const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    if (!coinciden('#re-pass', '#re-pass2', '#st-registro')) return;
     setStatus($('#st-registro'), 'Creando cuenta…');
     const inv = await sb.rpc('correo_invitado', { p_email: $('#re-email').value.trim() });
     if (!inv.error && inv.data === false) { setStatus($('#st-registro'), 'Este correo no tiene invitación. Pide al coordinador del registro que te invite con este mismo correo.', 'err'); return; }
@@ -377,6 +383,7 @@
   });
   $('#form-nueva').addEventListener('submit', async ev => {
     ev.preventDefault(); const f = ev.target; if (!f.checkValidity()) { f.reportValidity(); return; }
+    if (!coinciden('#nu-pass', '#nu-pass2', '#st-nueva')) return;
     const { error } = await sb.auth.updateUser({ password: $('#nu-pass').value });
     if (error) setStatus($('#st-nueva'), 'No se pudo cambiar: ' + error.message, 'err');
     else { setStatus($('#st-nueva'), 'Contraseña guardada.', 'ok'); recuperando = false; history.replaceState(null, '', location.pathname); await cargarSesion(); }
