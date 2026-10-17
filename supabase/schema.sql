@@ -570,3 +570,12 @@ alter table public.invitaciones
   add column if not exists recordatorios    smallint not null default 0,
   add column if not exists reenviar         boolean not null default false,  -- el coordinador pidió reenviar
   add column if not exists correos_pausados boolean not null default false;  -- no mandarle más correos
+
+-- ===== migracion_v12_tore =====
+-- v12: nuevo procedimiento "tore" (TORe, reducción endoscópica de la anastomosis gastroyeyunal).
+alter table public.pacientes drop constraint if exists pacientes_proc_check;
+alter table public.pacientes add constraint pacientes_proc_check
+  check (proc in ('manga','oagb','bypass','sadis','oatb','biparticion','manga_endo','tore','allurion','balon','otra'));
+alter table public.residentes_casos drop constraint if exists residentes_casos_proc_check;
+alter table public.residentes_casos add constraint residentes_casos_proc_check
+  check (proc in ('manga','oagb','bypass','sadis','oatb','biparticion','manga_endo','tore','allurion','balon','otra'));
