@@ -256,6 +256,17 @@
   // [clave, etiqueta del formulario, abreviatura en tablas, etiqueta en gráficas]
   const COMORB = [['dm2','DM2','DM2','DM2'],['prediabetes','Prediabetes','Prediab','Prediabetes'],['resist_ins','Resistencia a la insulina','RI','Resist. insulina'],['has','Hipertensión (HAS)','HAS','Hipertensión'],['dislip','Dislipidemia','Dislip','Dislipidemia'],['saos','SAOS (apnea del sueño)','SAOS','SAOS'],['erge','ERGE (reflujo)','ERGE','ERGE'],['masld','MASLD (hígado graso)','MASLD','MASLD'],['sop','SOP (ovario poliquístico)','SOP','SOP'],['osteoartrosis','Osteoartrosis','OA','Osteoartrosis'],['hipotiroidismo','Hipotiroidismo','Hipotir','Hipotiroidismo'],['depresion','Depresión / ansiedad','Depr','Depresión/ansiedad']];
   document.querySelectorAll('[data-comorb]').forEach(d => d.innerHTML = COMORB.map(([k,l]) => `<label><input type="checkbox" name="${k}" id="${k}">${l}</label>`).join(''));
+  // Botón para ver/ocultar contraseña en todos los campos de contraseña
+  const OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const OJO_TACHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.5 10.5 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.1-5.9M9.9 4.2A9.6 9.6 0 0 1 12 4c6.5 0 10 7 10 7a18.6 18.6 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M2 2l20 20"/></svg>';
+  document.querySelectorAll('input[type="password"]').forEach(inp => {
+    const wrap = document.createElement('div'); wrap.className = 'pw';
+    inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pw-eye'; b.innerHTML = OJO;
+    b.title = 'Mostrar contraseña'; b.setAttribute('aria-label', 'Mostrar contraseña');
+    b.addEventListener('click', () => { const ver = inp.type === 'password'; inp.type = ver ? 'text' : 'password'; b.innerHTML = ver ? OJO_TACHADO : OJO; b.title = b.ariaLabel = ver ? 'Ocultar contraseña' : 'Mostrar contraseña'; inp.focus(); });
+    wrap.appendChild(b);
+  });
   const L = { proc:{manga:'Manga',oagb:'OAGB',bypass:'Bypass',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, procLargo:{manga:'Manga gástrica',oagb:'OAGB',bypass:'Bypass en Y de Roux',sadis:'SADI-S',oatb:'OATB',biparticion:'Bipartición intestinal',manga_endo:'Manga endoscópica',allurion:'Balón Allurion',balon:'Balón endoscópico',otra:'Otra'}, abordaje:{laparoscopica:'Lap',robotica:'Robot',abierta:'Abierta',endoscopica:'Endo'}, tipo:{primaria:'Primaria',revisional:'Revisional'}, part:{cirujano:'Cirujano',primer_ayudante:'1er ayudante',segundo_ayudante:'2do ayudante'} };
 
   $('#auth-org').textContent = CFG.ORGANIZACION || '';
