@@ -341,6 +341,21 @@
   const calcIMC = () => { const w = Number($('#peso').value), t = Number($('#talla').value) / 100;
     if (w > 0 && t > 0) { $('#imc').value = (w / (t * t)).toFixed(1); $('#imc-hint').hidden = false; } else { $('#imc-hint').hidden = true; } };
   $('#peso').addEventListener('input', calcIMC); $('#talla').addEventListener('input', calcIMC);
+  // Correo siempre en minúsculas y sin espacios (evita que 'Juan@' y 'juan@' sean distintos)
+  document.querySelectorAll('input[type="email"]').forEach(i => i.addEventListener('change', () => { i.value = i.value.trim().toLowerCase(); }));
+  // Aviso en vivo mientras escribe las contraseñas
+  [['#re-pass','#re-pass2','#st-registro'],['#nu-pass','#nu-pass2','#st-nueva']].forEach(([a,b,st]) => { const chk = () => { const A = $(a).value, B = $(b).value;
+    if (B && A !== B) setStatus($(st), 'Las contraseñas no coinciden.', 'err'); else if (A && A.length < 8) setStatus($(st), 'La contraseña debe tener al menos 8 caracteres.', 'err'); else setStatus($(st), ''); };
+    $(a).addEventListener('input', chk); $(b).addEventListener('input', chk); });
+  // Avisos suaves (no bloquean) en edad, IMC y folio repetido
+  const aviso = document.createElement('p'); aviso.className = 'status warn'; aviso.id = 'aviso-form'; $('#st-form').before(aviso);
+  const revisar = () => { const m = []; const e = Number($('#edad').value), i = Number($('#imc').value), fo = $('#folio').value.trim().toLowerCase();
+    if (e && (e < 14 || e > 85)) m.push('Edad ' + e + ' años: ¿es correcta?');
+    if (i && (i < 25 || i > 80)) m.push('IMC ' + i + ': ¿es correcto?');
+    if (fo) { const id = $('#pac-id').value, c = esAdmin() ? $('#centro-admin').value : (perfil && perfil.centro_id); const dup = pacientes.find(p => p.id !== id && p.centro_id === c && (p.folio || '').trim().toLowerCase() === fo); if (dup) m.push('Ya hay un paciente con folio "' + dup.folio + '" (' + dup.fecha + '). ¿Es el mismo?'); }
+    aviso.textContent = m.join(' '); };
+  ['#edad','#imc','#folio','#peso','#talla'].forEach(s => $(s).addEventListener('input', revisar));
+  $('#form').addEventListener('reset', () => setTimeout(revisar, 0));
   // Botón para ver/ocultar contraseña en todos los campos de contraseña
   const OJO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const OJO_TACHADO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.5 10.5 0 0 1 12 19c-6.5 0-10-7-10-7a18.5 18.5 0 0 1 5.1-5.9M9.9 4.2A9.6 9.6 0 0 1 12 4c6.5 0 10 7 10 7a18.6 18.6 0 0 1-2.2 3.2M14.1 14.1a3 3 0 1 1-4.2-4.2"/><path d="M2 2l20 20"/></svg>';
@@ -532,7 +547,7 @@
   function editar(p){
     $('#pac-id').value = p.id; $('#banner-edit').hidden = false; $('#guardar').textContent = 'Guardar cambios';
     $('#centro-admin').value = p.centro_id; $('#fecha').value = p.fecha; $('#folio').value = p.folio || '';
-    (p.sexo === 'M' ? $('#sexo-m') : $('#sexo-h')).checked = true; $('#edad').value = p.edad; $('#peso').value = p.peso ?? ''; $('#talla').value = p.talla ?? ''; $('#imc').value = p.imc; $('#imc-hint').hidden = !(p.peso && p.talla);
+    (p.sexo === 'M' ? $('#sexo-m') : $('#sexo-h')).checked = true; $('#edad').value = p.edad; $('#peso').value = p.peso ?? ''; $('#talla').value = p.talla ?? ''; $('#imc').value = p.imc; $('#imc-hint').hidden = !(p.peso && p.talla); revisar();
     COMORB.forEach(([k]) => { $('#'+k).checked = !!p[k]; });
     (p.origen === 'internacional' ? $('#origen-int') : $('#origen-nac')).checked = true;
     (p.sector === 'publico' ? $('#sector-pub') : $('#sector-priv')).checked = true;
