@@ -43,6 +43,7 @@ legend{font-size:.76rem;text-transform:uppercase;letter-spacing:.08em;color:var(
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field.wide{grid-column:1/-1}
 label{font-size:.9rem;font-weight:500}
+.hint-inline{font-weight:400;color:var(--muted);font-size:.8rem}
 .field:not(.wide)>label{white-space:nowrap}
 input,select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-height:44px}
 textarea{min-height:70px;resize:vertical}
