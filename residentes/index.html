@@ -334,7 +334,7 @@
       options: { data: { nombre: $('#re-nombre').value.trim(), rol: 'residente', sede: $('#re-sede').value.trim(), anio_res: $('#re-anio').value, acepto_terminos: new Date().toISOString() } } });
     if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : error.message.includes('Database') ? 'Este correo no tiene invitación. Pide al coordinador que te invite.' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
     if (data.session) setStatus($('#st-registro'), '');
-    else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
+    else setStatus($('#st-registro'), 'Cuenta creada. Ya puedes entrar con tu correo y contraseña.', 'ok');
   });
   $('#form-olvide').addEventListener('submit', async ev => {
     ev.preventDefault(); setStatus($('#st-olvide'), 'Enviando…');
