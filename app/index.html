@@ -288,7 +288,7 @@
         <div class="field"><label for="in-rol">Rol</label><select id="in-rol"><option value="centro">Cirujano socio</option><option value="residente">Residente</option><option value="admin">Coordinador</option></select></div>
         <div class="field"><label for="in-nota">Nota (opcional)</label><input id="in-nota" maxlength="80" placeholder="Socios activos 2026"></div>
       </div>
-      <div class="actions"><button class="btn primary" type="submit">Agregar a la lista</button><button class="btn" type="button" id="copiar-masivo">Copiar texto del correo</button><label class="hint" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="registro-cerrado" style="width:auto;min-height:0"> Registro cerrado (solo invitados)</label></div>
+      <div class="actions"><button class="btn primary" type="submit">Agregar a la lista</button><button class="btn" type="button" id="copiar-masivo">Copiar texto del correo</button><span class="hint">Al agregar un correo, la invitación se envía sola (contacto@registrobariatrico.com) y, si no crea cuenta, recibe hasta 2 recordatorios.</span><label class="hint" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="registro-cerrado" style="width:auto;min-height:0"> Registro cerrado (solo invitados)</label></div>
       <p class="status" id="st-invitar"></p>
     </form>
   </div>
@@ -755,6 +755,14 @@
   });
 
   // ---------- admin: usuarios ----------
+  const fechaCorta = iso => { const d = new Date(iso); return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }); };
+  function estadoCorreo(i){
+    if (i.correos_pausados) return 'Correos pausados';
+    if (i.reenviar) return 'Reenvío en la próxima hora';
+    if (!i.enviado) return 'Correo de invitación: sale en menos de una hora';
+    const r = i.recordatorios || 0;
+    return 'Invitado por correo el ' + fechaCorta(i.enviado) + (r ? ` · ${r} recordatorio${r === 1 ? '' : 's'} (último ${fechaCorta(i.ultimo_correo)})` : ' · recordatorio automático a los 5 días');
+  }
   function renderUsuarios(){
     const opts = '<option value="">— sin centro —</option>' + centros.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
     $('#tbody-usuarios').innerHTML = perfiles.map(p => {
@@ -774,8 +782,8 @@
     $('#count-inv').textContent = invitaciones.length ? `${invitaciones.length} invitado${invitaciones.length === 1 ? '' : 's'} · ${usados} con cuenta · ${invitaciones.length - usados} pendiente${invitaciones.length - usados === 1 ? '' : 's'}` : '';
     $('#tbody-invitaciones').innerHTML = lista.map(i => `<tr>
       <td>${esc(i.email)}</td><td>${ROL[i.rol] || i.rol}</td><td>${esc(i.nota||'')}</td>
-      <td>${i.usado ? '<span class="pill">Registrado ' + esc(i.usado.slice(0,10)) + '</span>' : '<span class="pill rev">Pendiente</span>'}</td>
-      <td style="white-space:normal"><button class="rowbtn" data-copyinv="${esc(i.email)}">Copiar mensaje</button> ${i.usado ? '' : `<button class="rowbtn" data-delinv="${esc(i.email)}">Quitar</button>`}</td></tr>`).join('');
+      <td>${i.usado ? '<span class="pill">Registrado ' + esc(i.usado.slice(0,10)) + '</span>' : '<span class="pill rev">Pendiente</span><br><span class="hint">' + estadoCorreo(i) + '</span>'}</td>
+      <td style="white-space:normal"><button class="rowbtn" data-copyinv="${esc(i.email)}">Copiar mensaje</button> ${i.usado ? '' : `<button class="rowbtn" data-reinv="${esc(i.email)}" ${i.reenviar ? 'disabled' : ''}>${i.reenviar ? 'Reenvío programado' : 'Reenviar correo'}</button> <button class="rowbtn" data-pauseinv="${esc(i.email)}">${i.correos_pausados ? 'Reanudar correos' : 'Pausar correos'}</button> <button class="rowbtn" data-delinv="${esc(i.email)}">Quitar</button>`}</td></tr>`).join('');
   }
   $('#filtro-inv').addEventListener('input', renderUsuarios);
   const BASE_URL = () => location.href.split('#')[0].replace(/app\/?(\?.*)?$/, '');
@@ -841,7 +849,7 @@ Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas, A.C.`
     if (repetidos.length) partes.push(`${repetidos.length} ya estaba${repetidos.length === 1 ? '' : 'n'} en la lista`);
     if (invalidos.length) partes.push(`${invalidos.length} no válido${invalidos.length === 1 ? '' : 's'}: ${invalidos.join(', ')}`);
     $('#in-lista').value = invalidos.join('\n');
-    setStatus($('#st-invitar'), partes.join(' · ') + (nuevos.length ? '. Ahora envíales la liga: usa "Copiar texto del correo".' : '.'), invalidos.length && !nuevos.length ? 'err' : 'ok');
+    setStatus($('#st-invitar'), partes.join(' · ') + (nuevos.length ? '. El correo de invitación les llega solo en menos de una hora (y un recordatorio si no entran).' : '.'), invalidos.length && !nuevos.length ? 'err' : 'ok');
     await recargar();
   });
   $('#registro-cerrado').addEventListener('change', async ev => {
@@ -859,6 +867,12 @@ Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas, A.C.`
       try { await navigator.clipboard.writeText(msg); c.textContent = 'Copiado'; setTimeout(() => c.textContent = 'Copiar mensaje', 2000); } catch(e) { setStatus($('#st-invitar'), 'No se pudo copiar.', 'err'); }
       return;
     }
+    const r = ev.target.closest('[data-reinv]');
+    if (r) { const { error } = await sb.from('invitaciones').update({ reenviar: true, correos_pausados: false }).eq('email', r.dataset.reinv);
+      setStatus($('#st-invitar'), error ? 'No se pudo programar: ' + error.message : 'Listo: el correo se reenviará en la próxima hora.', error ? 'err' : 'ok'); await recargar(); return; }
+    const p = ev.target.closest('[data-pauseinv]');
+    if (p) { const i = invitaciones.find(x => x.email === p.dataset.pauseinv); const { error } = await sb.from('invitaciones').update({ correos_pausados: !i.correos_pausados }).eq('email', p.dataset.pauseinv);
+      setStatus($('#st-invitar'), error ? 'No se pudo cambiar: ' + error.message : (i.correos_pausados ? 'Correos reanudados.' : 'No se le enviarán más correos.'), error ? 'err' : 'ok'); await recargar(); return; }
     const d = ev.target.closest('[data-delinv]'); if (!d) return;
     const { error } = await sb.from('invitaciones').delete().eq('email', d.dataset.delinv);
     setStatus($('#st-invitar'), error ? 'No se pudo quitar: ' + error.message : 'Invitación quitada.', error ? 'err' : 'ok');
