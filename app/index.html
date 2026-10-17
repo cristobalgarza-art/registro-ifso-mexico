@@ -410,7 +410,7 @@
     const { data, error } = await sb.auth.signUp({ email: $('#re-email').value.trim(), password: $('#re-pass').value, options: { data: { nombre: $('#re-nombre').value.trim(), ciudad: $('#re-ciudad').value.trim(), estado: $('#re-estado').value, hospitales: $('#re-hosp').value.trim(), acepto_terminos: new Date().toISOString() } } });
     if (error) { setStatus($('#st-registro'), error.message.includes('already') ? 'Ese correo ya tiene cuenta. Usa "Entrar".' : error.message.includes('Database') ? 'Este correo no tiene invitación. Pide al coordinador que te invite.' : 'No se pudo crear la cuenta: ' + error.message, 'err'); return; }
     if (data.session) setStatus($('#st-registro'), '');
-    else setStatus($('#st-registro'), 'Cuenta creada. Revisa tu correo y abre el enlace de confirmación; después vuelve aquí y entra.', 'ok');
+    else setStatus($('#st-registro'), 'Cuenta creada. Ya puedes entrar con tu correo y contraseña.', 'ok');
   });
   $('#form-olvide').addEventListener('submit', async ev => {
     ev.preventDefault(); setStatus($('#st-olvide'), 'Enviando…');
@@ -789,7 +789,7 @@ Para crear tu cuenta:
 1. Entra a ${BASE_URL()} y toca "Entrar al registro".
 2. Elige "Crear cuenta nueva" usando este mismo correo (es el que está autorizado).
 3. Escribe tu nombre, ciudad y hospital(es) donde operas y acepta el aviso de privacidad. Tu centro queda creado en ese momento.
-4. Confirma tu correo con el enlace que recibirás y captura cada paciente operado; toma menos de un minuto.
+4. Listo: captura cada paciente operado; toma menos de un minuto.
 
 Desde el celular puedes instalarlo como app con el botón "Instalar app".
 
@@ -855,7 +855,7 @@ Colegio Mexicano de Cirugía para la Obesidad y Enfermedades Metabólicas, A.C.`
       const i = invitaciones.find(x => x.email === c.dataset.copyinv); const base = BASE_URL();
       const msg = i.rol === 'residente'
         ? `Bitácora de Residentes – Registro Bariátrico México\n\n1. Abre ${base}residentes/\n2. Toca "Soy residente, crear mi cuenta" usando este correo: ${i.email}\n3. Captura cada cirugía en la que participes.\n\nTu bitácora es personal y puedes descargarla en Excel cuando la necesites.`
-        : `Registro Bariátrico México\n\n1. Abre ${base}app/\n2. Toca "Crear cuenta nueva" usando este correo: ${i.email}\n3. Escribe tu nombre, ciudad y hospital(es) donde operas; tu centro queda creado en ese momento.\n4. Confirma tu correo con el enlace que recibirás y captura cada paciente operado; toma menos de un minuto.\n\nDudas: contacto@registrobariatrico.com`;
+        : `Registro Bariátrico México\n\n1. Abre ${base}app/\n2. Toca "Crear cuenta nueva" usando este correo: ${i.email}\n3. Escribe tu nombre, ciudad y hospital(es) donde operas; tu centro queda creado en ese momento.\n4. Listo: captura cada paciente operado; toma menos de un minuto.\n\nDudas: contacto@registrobariatrico.com`;
       try { await navigator.clipboard.writeText(msg); c.textContent = 'Copiado'; setTimeout(() => c.textContent = 'Copiar mensaje', 2000); } catch(e) { setStatus($('#st-invitar'), 'No se pudo copiar.', 'err'); }
       return;
     }
